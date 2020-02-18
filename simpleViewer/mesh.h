@@ -4,6 +4,9 @@
 #include "Vec3D.h"
 #include "Triangle.h"
 #include <queue>
+#include <QGLViewer/qglviewer.h>
+
+using namespace qglviewer;
 
 enum Side {INTERIOR, EXTERIOR};
 
@@ -31,10 +34,9 @@ public:
     std::vector< std::vector<unsigned int>> &getVertexTriangles(){return vertexTriangles;}
     const std::vector< std::vector<unsigned int>> &getVertexTriangles()const {return vertexTriangles;}
 
+    void init();
     void draw();
 
-    void recomputeNormals();
-    void update();
     void clear();
 
     float getBBRadius();
@@ -43,11 +45,23 @@ public:
 
     void invertNormal(){normalDirection *= -1;}
 
-    void zero();
+    void icp(Mesh *base);
+
 
 protected:
-    void init();
     void computeBB();
+    void zero();
+    void alignWithBase(Mesh* base);
+
+    void update();
+    void recomputeNormals();
+
+    void rotate(Quaternion r);
+    void translate(Vec t);
+
+    void scaleToBase(Mesh* base);
+    void rotateToBase(Mesh* base);
+    int findDepthAxis();
 
     void computeTriangleNormals();
     Vec3Df computeTriangleNormal(unsigned int t);
@@ -69,6 +83,8 @@ protected:
     float radius;
 
     int normalDirection;
+
+    Frame frame;        // can do rotations from the frame?
 };
 
 #endif // MESH_H

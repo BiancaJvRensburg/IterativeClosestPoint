@@ -2,6 +2,14 @@
 #include <algorithm>
 #include <float.h>
 
+void Mesh::init(){
+    computeBB();
+    frame = Frame();
+    frame.setPosition(static_cast<double>(BBCentre[0]), static_cast<double>(BBCentre[1]), static_cast<double>(BBCentre[2]));
+    zero();
+    update();
+}
+
 void Mesh::computeBB(){
 
     BBMin = Vec3Df( FLT_MAX, FLT_MAX, FLT_MAX );
@@ -19,7 +27,17 @@ void Mesh::computeBB(){
     radius = (BBMax - BBMin).norm();
 
     BBCentre = (BBMax + BBMin)/2.0f;
-    std::cout << "Centre : " << BBCentre[0] << " , " << BBCentre[1] << " , " << BBCentre[2] << std::endl;
+}
+
+int Mesh::findDepthAxis(){
+    for(int i=0; i<3; i++){
+        float a = abs(BBMax[i] - BBMin[i]);
+        float b = abs(BBMax[(i+1)%3] - BBMin[(i+1)%3]);
+        float c = abs(BBMax[(i+2)%3] - BBMin[(i+2)%3]);
+        if(a <= b && a<=c) return i;
+    }
+
+    return 0;   // will never reach here
 }
 
 void Mesh::update(){
@@ -87,6 +105,8 @@ void Mesh::glTriangle(unsigned int i){
 
 void Mesh::draw()
 {
+    glPushMatrix();
+    glMultMatrixd(frame.matrix());
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEPTH);
@@ -99,6 +119,8 @@ void Mesh::draw()
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_DEPTH);
+
+    glPopMatrix();
 }
 
 float Mesh::getBBRadius(){
@@ -107,9 +129,41 @@ float Mesh::getBBRadius(){
 }
 
 void Mesh::zero(){
-    computeBB();
-
+    Vec BBCentreWorld = frame.localInverseCoordinatesOf(Vec(BBCentre[0],BBCentre[1],BBCentre[2]));
+    Vec3Df t = Vec3Df(BBCentreWorld.x, BBCentreWorld.y, BBCentreWorld.z);
     for(unsigned int i=0; i<vertices.size(); i++){
-        vertices[i] -= BBCentre;
-    }
+            vertices[i] -= t;
+        }
+
+    BBCentre -= t;
+    BBMin -= t;
+    BBMax -= t;
+}
+
+void Mesh::translate(Vec t){
+    frame.translate(t);
+}
+
+void Mesh::rotate(Quaternion r){
+    frame.rotate(r);
+}
+
+void Mesh::alignWithBase(Mesh *base){
+    scaleToBase(base);
+    // Rotate
+}
+
+void Mesh::scaleToBase(Mesh *base){
+    float radiusBase = base->getBBRadius();
+    float ratio = radiusBase / radius;
+
+    for(unsigned int i=0; i<vertices.size(); i++) vertices[i] *= ratio;
+}
+
+void Mesh::rotateToBase(Mesh *base){
+
+}
+
+void Mesh::icp(Mesh* base){
+
 }

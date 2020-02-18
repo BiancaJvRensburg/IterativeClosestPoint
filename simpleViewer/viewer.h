@@ -14,7 +14,9 @@ class Viewer : public QGLViewer
 public :
     Viewer(QWidget *parent, StandardCamera *camera);
 
+public Q_SLOTS:
     void openOFF(QString filename);
+    void registration();
 
 protected:
     virtual void draw();

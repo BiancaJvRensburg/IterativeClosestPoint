@@ -42,8 +42,7 @@ void Viewer::openOFF(QString filename) {
 
     FileIO::openOFF(filename.toStdString(), vertices, triangles, neighbours, vertexTriangles);
 
-    meshes[lastIndex]->zero();
-    meshes[lastIndex]->update();
+    meshes[lastIndex]->init();
 
     // Set the camera
     Vec3Df center;
@@ -58,4 +57,9 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
     camera()->setSceneCenter(Vec(static_cast<double>(center[0]), static_cast<double>(center[1]), static_cast<double>(center[2])));
     camera()->setSceneRadius(static_cast<double>(radius*1.05f));
     camera()->showEntireScene();
+}
+
+void Viewer::registration(){
+    if(meshes.size()>=2) meshes[0]->icp(meshes[1]);
+    update();
 }

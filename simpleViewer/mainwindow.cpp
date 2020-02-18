@@ -55,10 +55,14 @@ MainWindow::~MainWindow()
 void MainWindow::initFileActions(){
     fileActionGroup = new QActionGroup(this);
 
-    QAction *openFileSkullAction = new QAction("Open mesh", this);
-    connect(openFileSkullAction, &QAction::triggered, this, &MainWindow::openMesh);
+    QAction *openFileAction = new QAction("Open mesh", this);
+    connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
 
-    fileActionGroup->addAction(openFileSkullAction);
+    QAction *icpAction = new QAction("Registration", this);
+    connect(icpAction, &QAction::triggered, view, &Viewer::registration);
+
+    fileActionGroup->addAction(openFileAction);
+    fileActionGroup->addAction(icpAction);
 }
 
 void MainWindow::initFileMenu(){
