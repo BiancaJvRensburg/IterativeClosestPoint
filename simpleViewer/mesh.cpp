@@ -19,6 +19,7 @@ void Mesh::computeBB(){
     radius = (BBMax - BBMin).norm();
 
     BBCentre = (BBMax + BBMin)/2.0f;
+    std::cout << "Centre : " << BBCentre[0] << " , " << BBCentre[1] << " , " << BBCentre[2] << std::endl;
 }
 
 void Mesh::update(){
@@ -103,4 +104,12 @@ void Mesh::draw()
 float Mesh::getBBRadius(){
     computeBB();
     return radius;
+}
+
+void Mesh::zero(){
+    computeBB();
+
+    for(unsigned int i=0; i<vertices.size(); i++){
+        vertices[i] -= BBCentre;
+    }
 }

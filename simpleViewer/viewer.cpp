@@ -16,7 +16,7 @@ void Viewer::draw() {
     glMultMatrixd(manipulatedFrame()->matrix());
 
     glColor3f(1.,1.,1.);
-    mesh.draw();
+    for(unsigned int i=0; i<meshes.size(); i++) meshes[i]->draw();
     glPopMatrix();
 }
 
@@ -33,14 +33,17 @@ void Viewer::init() {
 }
 
 void Viewer::openOFF(QString filename) {
-    std::vector<Vec3Df> &vertices = mesh.getVertices();
-    std::vector<Triangle> &triangles = mesh.getTriangles();
-    std::vector< std::vector<unsigned int>> &neighbours = mesh.getVertexNeighbours();
-    std::vector< std::vector<unsigned int>> &vertexTriangles = mesh.getVertexTriangles();
+    unsigned long long lastIndex = meshes.size();
+    meshes.push_back(new Mesh());
+    std::vector<Vec3Df> &vertices = meshes[lastIndex]->getVertices();
+    std::vector<Triangle> &triangles = meshes[lastIndex]->getTriangles();
+    std::vector< std::vector<unsigned int>> &neighbours = meshes[lastIndex]->getVertexNeighbours();
+    std::vector< std::vector<unsigned int>> &vertexTriangles = meshes[lastIndex]->getVertexTriangles();
 
     FileIO::openOFF(filename.toStdString(), vertices, triangles, neighbours, vertexTriangles);
 
-    mesh.update();
+    meshes[lastIndex]->zero();
+    meshes[lastIndex]->update();
 
     // Set the camera
     Vec3Df center;

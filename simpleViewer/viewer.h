@@ -22,6 +22,6 @@ protected:
 
     void updateCamera(const Vec3Df & center, float radius);
 
-    Mesh mesh;
+    std::vector<Mesh*> meshes;
     ManipulatedFrame* viewerFrame;
 };
