@@ -45,6 +45,9 @@ public:
 
     void invertNormal(){normalDirection *= -1;}
 
+    // ICP
+    Vec getDepthAxis(bool isLocal);
+
     void icp(Mesh *base);
 
 
@@ -61,7 +64,7 @@ protected:
 
     void scaleToBase(Mesh* base);
     void rotateToBase(Mesh* base);
-    int findDepthAxis();
+    void matchDepthAxis(Mesh* base);
 
     void computeTriangleNormals();
     Vec3Df computeTriangleNormal(unsigned int t);

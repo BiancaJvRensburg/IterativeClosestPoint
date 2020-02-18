@@ -29,17 +29,6 @@ void Mesh::computeBB(){
     BBCentre = (BBMax + BBMin)/2.0f;
 }
 
-int Mesh::findDepthAxis(){
-    for(int i=0; i<3; i++){
-        float a = abs(BBMax[i] - BBMin[i]);
-        float b = abs(BBMax[(i+1)%3] - BBMin[(i+1)%3]);
-        float c = abs(BBMax[(i+2)%3] - BBMin[(i+2)%3]);
-        if(a <= b && a<=c) return i;
-    }
-
-    return 0;   // will never reach here
-}
-
 void Mesh::update(){
     computeBB();
     recomputeNormals();
@@ -145,12 +134,14 @@ void Mesh::translate(Vec t){
 }
 
 void Mesh::rotate(Quaternion r){
-    frame.rotate(r);
+    Vec rotationPoint = Vec(BBCentre[0], BBCentre[1], BBCentre[2]);
+    rotationPoint = frame.inverseCoordinatesOf(rotationPoint);
+    frame.rotateAroundPoint(r, rotationPoint);
 }
 
 void Mesh::alignWithBase(Mesh *base){
     scaleToBase(base);
-    // Rotate
+    matchDepthAxis(base);
 }
 
 void Mesh::scaleToBase(Mesh *base){
@@ -164,6 +155,35 @@ void Mesh::rotateToBase(Mesh *base){
 
 }
 
-void Mesh::icp(Mesh* base){
+Vec Mesh::getDepthAxis(bool isLocal){
+    float a = abs(BBMax[0] - BBMin[0]);
+    float b = abs(BBMax[1] - BBMin[1]);
+    float c = abs(BBMax[2] - BBMin[2]);
 
+    if(a <= b && a <= c){
+        if(isLocal) return frame.localTransformOf(Vec(1,0,0));
+        return frame.localInverseTransformOf(Vec(1,0,0));
+    }
+    else if(b <= a && b <= c){
+        if(isLocal) return frame.localTransformOf(Vec(0,1,0));
+        return frame.localInverseTransformOf(Vec(0,1,0));
+    }
+    else{
+        if(isLocal) return frame.localTransformOf(Vec(0,0,1));
+        return frame.localInverseTransformOf(Vec(0,0,1));
+    }
+}
+
+void Mesh::matchDepthAxis(Mesh* base){
+    Vec depth = getDepthAxis(true);
+    Vec baseDepth = base->getDepthAxis(false);
+
+    Quaternion r = Quaternion(depth, baseDepth);
+    rotate(r);
+}
+
+void Mesh::icp(Mesh* base){
+    alignWithBase(base);
+
+    // NOTE THE ICP ITSELF MUST BE DONE ACCORDING TO THE WORLD COORDINATES
 }
