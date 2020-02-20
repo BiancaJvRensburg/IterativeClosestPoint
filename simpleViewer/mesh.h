@@ -66,8 +66,21 @@ protected:
     void scaleToBase(Mesh* base);
     void matchDepthAxis(Mesh* base);
 
-    void findClosestPoints(Mesh* base, std::vector<int>& closestPoints);
+    std::vector<Vec3Df> baseToFrame(Mesh* base);
+    Vec frameToWorld(unsigned int index);       // convert the vertice from local to world coordinates
+    Vec3Df worldToFrame(Vec v);                 // convert the vertice from world to local coordinates
+
+    void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
     double euclideanDistance(Vec3Df a, Vec3Df b);
+
+    void findAlignment(std::vector<Vec3Df>& correspondences);
+    Vec3Df getCentroid(std::vector<Vec3Df>& v);
+    void centralise(std::vector<Vec3Df>& v);
+    float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
+    std::vector<float> constructN(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+
+    float getError(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+    float euclideanNorm(Vec3Df a);
 
     void computeTriangleNormals();
     Vec3Df computeTriangleNormal(unsigned int t);

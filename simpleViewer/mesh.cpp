@@ -187,18 +187,73 @@ void Mesh::matchDepthAxis(Mesh* base){
 }
 
 void Mesh::icp(Mesh* base){
-    alignWithBase(base);
+    //alignWithBase(base);
 
     // NOTE THE ICP ITSELF MUST BE DONE ACCORDING TO THE WORLD COORDINATES
 
+    // -- rather convert it all in terms of this frame
+
     // determine correspondances
             // correspondances : closest euclidean point
+
+    int maxIterations = 200;
+    float errorThreshold = 50.f;
+    int it = 0;
+    float error = FLT_MAX;
+
+    while(it<maxIterations && error > errorThreshold){
+        std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+        std::vector<Vec3Df> correspondences;
+        findClosestPoints(basePoints, correspondences);
+        findAlignment(correspondences);
+        // apply alignment
+
+        error = getError(vertices, correspondences);
+        it++;
+    }
+}
+
+float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
+    unsigned long long N = a.size();
+    float error = 0;
+
+    for(unsigned int i=0; i<N; i++){
+        float ei = euclideanNorm(b[i] - a[i]);
+        error += ei*ei;
+    }
+
+    return error;
+}
+
+float Mesh::euclideanNorm(Vec3Df a){
+    return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+}
+
+std::vector<Vec3Df> Mesh::baseToFrame(Mesh *base){
+    unsigned long long N = base->getVertices().size();
+    std::vector<Vec3Df> v;
+
+    for(unsigned int i=0; i<N; i++){
+        Vec vWorld = base->frameToWorld(i);
+        v.push_back(worldToFrame(vWorld));
+    }
+
+    return v;
+}
+
+Vec Mesh::frameToWorld(unsigned int index){
+    Vec3Df v = vertices[index];
+    return frame.localInverseCoordinatesOf(Vec(v));
+}
+
+Vec3Df Mesh::worldToFrame(Vec v){
+   frame.localCoordinatesOf(v);
+   return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
 }
 
 // Brute force
-void Mesh::findClosestPoints(Mesh *base, std::vector<int>& closestPoints){     // closestPoint[i] is the index of the closest point to index i
+void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints){
     closestPoints.clear();
-    std::vector<Vec3Df> baseVerticies = base->getVertices();
 
     for(unsigned int i=0; i<vertices.size(); i++){
         double minDist = DBL_MAX;
@@ -210,7 +265,7 @@ void Mesh::findClosestPoints(Mesh *base, std::vector<int>& closestPoints){     /
                 minIndex = static_cast<int>(j);
             }
         }
-        closestPoints.push_back(minIndex);
+        closestPoints.push_back(baseVerticies[minIndex]);
     }
 }
 
@@ -220,4 +275,78 @@ double Mesh::euclideanDistance(Vec3Df a, Vec3Df b){
 
 void Mesh::rotateAroundAxis(Vec axis, double theta){
     rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
+}
+
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences){
+    centralise(vertices);
+    centralise(correspondences);
+
+    std::vector<float> N = constructN(vertices, correspondences);
+    // TODO find the eigenvectors of N
+}
+
+Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
+    Vec3Df centroid;
+    unsigned long long N = v.size();
+
+    for(unsigned int i=0; i<N; i++){
+        centroid += v[i];
+    }
+    centroid /= static_cast<float>(N);
+    return centroid;
+}
+
+void Mesh::centralise(std::vector<Vec3Df> &v){
+    Vec3Df centroid = getCentroid(v);
+    unsigned long long N = v.size();
+
+    for(unsigned int i=0; i<N; i++) v[i] -= centroid;
+}
+
+float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
+    float s = 0;
+    unsigned long long N = a.size();
+
+    for(unsigned int i=0; i<N; i++) s += a[i][aI] + b[i][bI];
+
+    return s;
+}
+
+std::vector<float> Mesh::constructN(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
+    std::vector<float> n;
+    n.resize(16);
+
+    float sxx = productSum(a, b, 0, 0);
+    float sxy = productSum(a, b, 0, 1);
+    float sxz = productSum(a, b, 0, 2);
+
+    float syx = productSum(a, b, 1, 0);
+    float syy = productSum(a, b, 1, 1);
+    float syz = productSum(a, b, 1, 2);
+
+    float szx = productSum(a, b, 2, 0);
+    float szy = productSum(a, b, 2, 1);
+    float szz = productSum(a, b, 2, 2);
+
+    n.push_back(sxx + syy + szz);
+    n.push_back(syz - szy);
+    n.push_back(-sxz + szx);
+    n.push_back(sxy - syz);
+
+    n.push_back(-szy + syz);
+    n.push_back(sxx - szz - syy);
+    n.push_back(sxy + syx);
+    n.push_back(sxz + szx);
+
+    n.push_back(szx - sxz);
+    n.push_back(syx + sxy);
+    n.push_back(syy - szz - sxx);
+    n.push_back(syz + szy);
+
+    n.push_back(-syx + sxy);
+    n.push_back(szx + sxz);
+    n.push_back(szy + syz);
+    n.push_back(szz - syy - sxx);
+
+    return n;
 }
