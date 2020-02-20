@@ -138,7 +138,6 @@ void Mesh::translate(Vec t){
 void Mesh::translateFromLocal(Vec t){
     t = frame.inverseTransformOf(t);
     translate(t);
-    std::cout << " Translated " << std::endl;
 }
 
 void Mesh::rotate(Quaternion r){
@@ -201,7 +200,6 @@ void Mesh::icp(Mesh* base){
     float error = FLT_MAX;
 
     //while(it<maxIterations && error > errorThreshold){
-        std::cout << "Getting base points " << std::endl;
         std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
         std::vector<Vec3Df> correspondences;
         std::cout << "Getting correspondences " << std::endl;
@@ -210,14 +208,7 @@ void Mesh::icp(Mesh* base){
         std::cout << "Finding alignment" << std::endl;
         Vec3Df translation;
         findAlignment(correspondences, translation);
-
-        std::cout << "Frame before : " << frame.position().x << " , " << frame.position().y << " , " << frame.position().z << std::endl;
-        std::cout << "Applying alignment : " << translation[0] << " , " << translation[1] << " , " << translation[2] << std::endl;
-
         applyAlignment(translation);
-        std::cout << "Frame after : " << frame.position().x << " , " << frame.position().y << " , " << frame.position().z << std::endl;
-        Vec3Df centroid = getCentroid(vertices);
-        std::cout << "Centroid after : " << centroid[0] << " , " << centroid[1] << " , " << centroid[2] << std::endl;
 
         std::cout << "Calculating error" << std::endl;
         error = getError(vertices, correspondences);
@@ -301,9 +292,6 @@ void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translati
     Vec3Df centroidV = getCentroid(vertices);
     Vec3Df centroidC = getCentroid(correspondences);
     translation = centroidC - centroidV;
-
-    std::cout << "Centroid c :" << centroidC[0] << " , " << centroidC[1] << " , " << centroidC[2] << std::endl;
-    std::cout << "Centroid v :" << centroidV[0] << " , " << centroidV[1] << " , " << centroidV[2] << std::endl;
 
     // std::vector<float> N = constructN(centralisedV, centralisedC);
     // TODO find the eigenvectors of N
