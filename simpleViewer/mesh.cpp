@@ -194,7 +194,7 @@ void Mesh::icp(Mesh* base){
 
     while(it<maxIterations && error > errorThreshold){
         std::cout << "Getting base points " << std::endl;
-        std::vector<Vec3Df> basePoints = base->getVertices(); //baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+        std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
         std::vector<Vec3Df> correspondences;
         std::cout << "Getting correspondences " << std::endl;
         findClosestPoints(basePoints, correspondences);
@@ -259,7 +259,7 @@ void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec
     for(unsigned int i=0; i<vertices.size(); i++){
         double minDist = DBL_MAX;
         int minIndex = -1;
-        for(unsigned int j=0; j<baseVerticies.size(); j++){
+        for(unsigned int j=0; j<baseVerticies.size()-5; j+=5){
             double d = euclideanDistance(vertices[i], baseVerticies[j]);
             if(d<minDist){
                 minDist = d;
