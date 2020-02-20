@@ -141,7 +141,7 @@ void Mesh::rotate(Quaternion r){
 
 void Mesh::alignWithBase(Mesh *base){
     scaleToBase(base);
-    matchDepthAxis(base);
+    //matchDepthAxis(base);
 }
 
 void Mesh::scaleToBase(Mesh *base){
@@ -149,10 +149,14 @@ void Mesh::scaleToBase(Mesh *base){
     float ratio = radiusBase / radius;
 
     for(unsigned int i=0; i<vertices.size(); i++) vertices[i] *= ratio;
+    BBMax *= ratio;
+    BBMin *= ratio;
+    BBCentre *= ratio;
+    radius = radiusBase;
 }
 
 void Mesh::rotateToBase(Mesh *base){
-
+    matchDepthAxis(base);
 }
 
 Vec Mesh::getDepthAxis(bool isLocal){

@@ -50,6 +50,7 @@ public:
 
     void icp(Mesh *base);
     void rotateAroundAxis(Vec axis, double alpha);
+    void rotateToBase(Mesh* base);
 
 protected:
     void computeBB();
@@ -63,7 +64,6 @@ protected:
     void translate(Vec t);
 
     void scaleToBase(Mesh* base);
-    void rotateToBase(Mesh* base);
     void matchDepthAxis(Mesh* base);
 
     void findClosestPoints(Mesh* base, std::vector<int>& closestPoints);

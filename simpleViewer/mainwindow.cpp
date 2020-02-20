@@ -61,6 +61,9 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
+    QAction *autoRAction = new QAction("Auto align", this);
+    connect(autoRAction, &QAction::triggered, view, &Viewer::autoRotate);
+
     QAction *rxAction = new QAction("Rotate X 90°", this);
     connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
 
@@ -72,6 +75,7 @@ void MainWindow::initFileActions(){
 
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
+    fileActionGroup->addAction(autoRAction);
     fileActionGroup->addAction(rxAction);
     fileActionGroup->addAction(ryAction);
     fileActionGroup->addAction(rzAction);

@@ -62,7 +62,7 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 }
 
 void Viewer::registration(){
-    if(meshes.size()>=2) meshes[0]->icp(meshes[1]);
+    for(unsigned int i=1; i<meshes.size(); i++) meshes[0]->icp(meshes[baseMesh]);
     update();
 }
 
@@ -79,4 +79,8 @@ void Viewer::rotateY(){
 void Viewer::rotateZ(){
     meshes[meshes.size()-1]->rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
     update();
+}
+
+void Viewer::autoRotate(){
+    meshes[meshes.size()-1]->rotateToBase(meshes[baseMesh]);
 }

@@ -20,6 +20,7 @@ public Q_SLOTS:
     void rotateX();     // rotate 90° around the x axis
     void rotateY();
     void rotateZ();
+    void autoRotate();
 
 protected:
     virtual void draw();
@@ -29,4 +30,5 @@ protected:
 
     std::vector<Mesh*> meshes;
     ManipulatedFrame* viewerFrame;
+    unsigned int baseMesh = 0;
 };
