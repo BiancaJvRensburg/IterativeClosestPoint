@@ -73,11 +73,13 @@ protected:
     void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
     double euclideanDistance(Vec3Df a, Vec3Df b);
 
-    void findAlignment(std::vector<Vec3Df>& correspondences);
+    void findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation);
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
-    void centralise(std::vector<Vec3Df>& v);
+    std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
     float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
     std::vector<float> constructN(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+
+    void applyAlignment(Vec3Df& translation);
 
     float getError(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
     float euclideanNorm(Vec3Df a);

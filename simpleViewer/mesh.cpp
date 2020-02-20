@@ -6,7 +6,7 @@ void Mesh::init(){
     computeBB();
     frame = Frame();
     frame.setPosition(static_cast<double>(BBCentre[0]), static_cast<double>(BBCentre[1]), static_cast<double>(BBCentre[2]));
-    zero();
+    //zero();
     update();
 }
 
@@ -187,30 +187,31 @@ void Mesh::matchDepthAxis(Mesh* base){
 }
 
 void Mesh::icp(Mesh* base){
-    //alignWithBase(base);
-
-    // NOTE THE ICP ITSELF MUST BE DONE ACCORDING TO THE WORLD COORDINATES
-
-    // -- rather convert it all in terms of this frame
-
-    // determine correspondances
-            // correspondances : closest euclidean point
-
-    int maxIterations = 200;
+    int maxIterations = 1;
     float errorThreshold = 50.f;
     int it = 0;
     float error = FLT_MAX;
 
     while(it<maxIterations && error > errorThreshold){
-        std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+        std::cout << "Getting base points " << std::endl;
+        std::vector<Vec3Df> basePoints = base->getVertices(); //baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
         std::vector<Vec3Df> correspondences;
+        std::cout << "Getting correspondences " << std::endl;
         findClosestPoints(basePoints, correspondences);
-        findAlignment(correspondences);
-        // apply alignment
-
+        std::cout << "Finding alignment" << std::endl;
+        Vec3Df translation;
+        findAlignment(correspondences, translation);
+        std::cout << "Applying alignment : " << translation[0] << " , " << translation[1] << " , " << translation[2] << std::endl;
+        applyAlignment(translation);
+        //update();     // update viewer, not mesh
+        std::cout << "Calculating error" << std::endl;
         error = getError(vertices, correspondences);
         it++;
     }
+}
+
+void Mesh::applyAlignment(Vec3Df &translation){
+    translate(Vec(translation));
 }
 
 float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
@@ -265,7 +266,7 @@ void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec
                 minIndex = static_cast<int>(j);
             }
         }
-        closestPoints.push_back(baseVerticies[minIndex]);
+        closestPoints.push_back(baseVerticies[static_cast<unsigned int>(minIndex)]);
     }
 }
 
@@ -277,11 +278,17 @@ void Mesh::rotateAroundAxis(Vec axis, double theta){
     rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
 }
 
-void Mesh::findAlignment(std::vector<Vec3Df>& correspondences){
-    centralise(vertices);
-    centralise(correspondences);
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation){
+    std::vector<Vec3Df> centralisedV = centralise(vertices);
+    std::vector<Vec3Df> centralisedC = centralise(correspondences);
 
-    std::vector<float> N = constructN(vertices, correspondences);
+    Vec3Df centroidV = getCentroid(vertices);
+    Vec3Df centroidC = getCentroid(correspondences);
+    translation = centroidC - centroidV;
+    std::cout << "Centroid c :" << centroidC[0] << " , " << centroidC[1] << " , " << centroidC[2] << std::endl;
+    std::cout << "Centroid v :" << centroidV[0] << " , " << centroidV[1] << " , " << centroidV[2] << std::endl;
+
+    // std::vector<float> N = constructN(centralisedV, centralisedC);
     // TODO find the eigenvectors of N
 }
 
@@ -296,11 +303,14 @@ Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
     return centroid;
 }
 
-void Mesh::centralise(std::vector<Vec3Df> &v){
+std::vector<Vec3Df> Mesh::centralise(std::vector<Vec3Df> &v){
     Vec3Df centroid = getCentroid(v);
     unsigned long long N = v.size();
+    std::vector<Vec3Df> centralised;
 
-    for(unsigned int i=0; i<N; i++) v[i] -= centroid;
+    for(unsigned int i=0; i<N; i++) centralised.push_back(v[i] - centroid);
+
+    return centralised;
 }
 
 float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
