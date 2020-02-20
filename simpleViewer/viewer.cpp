@@ -50,6 +50,8 @@ void Viewer::openOFF(QString filename) {
     MeshTools::computeAveragePosAndRadius(vertices, center, radius);
     updateCamera(center, static_cast<float>(radius));
 
+    std::cout << "File loaded " << std::endl;
+
     update();
 }
 
@@ -61,5 +63,20 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 
 void Viewer::registration(){
     if(meshes.size()>=2) meshes[0]->icp(meshes[1]);
+    update();
+}
+
+void Viewer::rotateX(){
+    meshes[meshes.size()-1]->rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+    update();
+}
+
+void Viewer::rotateY(){
+    meshes[meshes.size()-1]->rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+    update();
+}
+
+void Viewer::rotateZ(){
+    meshes[meshes.size()-1]->rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
     update();
 }

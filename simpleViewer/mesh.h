@@ -49,7 +49,7 @@ public:
     Vec getDepthAxis(bool isLocal);
 
     void icp(Mesh *base);
-
+    void rotateAroundAxis(Vec axis, double alpha);
 
 protected:
     void computeBB();
@@ -65,6 +65,9 @@ protected:
     void scaleToBase(Mesh* base);
     void rotateToBase(Mesh* base);
     void matchDepthAxis(Mesh* base);
+
+    void findClosestPoints(Mesh* base, std::vector<int>& closestPoints);
+    double euclideanDistance(Vec3Df a, Vec3Df b);
 
     void computeTriangleNormals();
     Vec3Df computeTriangleNormal(unsigned int t);

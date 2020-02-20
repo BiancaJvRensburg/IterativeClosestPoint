@@ -186,4 +186,34 @@ void Mesh::icp(Mesh* base){
     alignWithBase(base);
 
     // NOTE THE ICP ITSELF MUST BE DONE ACCORDING TO THE WORLD COORDINATES
+
+    // determine correspondances
+            // correspondances : closest euclidean point
+}
+
+// Brute force
+void Mesh::findClosestPoints(Mesh *base, std::vector<int>& closestPoints){     // closestPoint[i] is the index of the closest point to index i
+    closestPoints.clear();
+    std::vector<Vec3Df> baseVerticies = base->getVertices();
+
+    for(unsigned int i=0; i<vertices.size(); i++){
+        double minDist = DBL_MAX;
+        int minIndex = -1;
+        for(unsigned int j=0; j<baseVerticies.size(); j++){
+            double d = euclideanDistance(vertices[i], baseVerticies[j]);
+            if(d<minDist){
+                minDist = d;
+                minIndex = static_cast<int>(j);
+            }
+        }
+        closestPoints.push_back(minIndex);
+    }
+}
+
+double Mesh::euclideanDistance(Vec3Df a, Vec3Df b){
+    return sqrt(pow(a[0]-b[0], 2.0) + pow(a[1]-b[1], 2.0) + pow(a[2]-b[2], 2.0));
+}
+
+void Mesh::rotateAroundAxis(Vec axis, double theta){
+    rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
 }

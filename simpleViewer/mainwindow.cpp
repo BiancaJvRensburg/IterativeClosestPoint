@@ -61,8 +61,20 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
+    QAction *rxAction = new QAction("Rotate X 90°", this);
+    connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
+
+    QAction *ryAction = new QAction("Rotate Y 90°", this);
+    connect(ryAction, &QAction::triggered, view, &Viewer::rotateY);
+
+    QAction *rzAction = new QAction("Rotate Z 90°", this);
+    connect(rzAction, &QAction::triggered, view, &Viewer::rotateZ);
+
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
+    fileActionGroup->addAction(rxAction);
+    fileActionGroup->addAction(ryAction);
+    fileActionGroup->addAction(rzAction);
 }
 
 void MainWindow::initFileMenu(){
