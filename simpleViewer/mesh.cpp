@@ -104,6 +104,8 @@ void Mesh::draw()
 
     for(unsigned int i = 0 ; i < triangles.size(); i++) glTriangle(i);
 
+    //QGLViewer::drawAxis(15.0);
+
     glEnd();
 
     glDisable(GL_DEPTH_TEST);
@@ -131,6 +133,12 @@ void Mesh::zero(){
 
 void Mesh::translate(Vec t){
     frame.translate(t);
+}
+
+void Mesh::translateFromLocal(Vec t){
+    t = frame.inverseTransformOf(t);
+    translate(t);
+    std::cout << " Translated " << std::endl;
 }
 
 void Mesh::rotate(Quaternion r){
@@ -187,31 +195,39 @@ void Mesh::matchDepthAxis(Mesh* base){
 }
 
 void Mesh::icp(Mesh* base){
-    int maxIterations = 1;
+    int maxIterations = 2;
     float errorThreshold = 50.f;
     int it = 0;
     float error = FLT_MAX;
 
-    while(it<maxIterations && error > errorThreshold){
+    //while(it<maxIterations && error > errorThreshold){
         std::cout << "Getting base points " << std::endl;
         std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
         std::vector<Vec3Df> correspondences;
         std::cout << "Getting correspondences " << std::endl;
         findClosestPoints(basePoints, correspondences);
+
         std::cout << "Finding alignment" << std::endl;
         Vec3Df translation;
         findAlignment(correspondences, translation);
+
+        std::cout << "Frame before : " << frame.position().x << " , " << frame.position().y << " , " << frame.position().z << std::endl;
         std::cout << "Applying alignment : " << translation[0] << " , " << translation[1] << " , " << translation[2] << std::endl;
+
         applyAlignment(translation);
-        //update();     // update viewer, not mesh
+        std::cout << "Frame after : " << frame.position().x << " , " << frame.position().y << " , " << frame.position().z << std::endl;
+        Vec3Df centroid = getCentroid(vertices);
+        std::cout << "Centroid after : " << centroid[0] << " , " << centroid[1] << " , " << centroid[2] << std::endl;
+
         std::cout << "Calculating error" << std::endl;
         error = getError(vertices, correspondences);
         it++;
-    }
+   // }
+    Q_EMIT updateViewer();
 }
 
 void Mesh::applyAlignment(Vec3Df &translation){
-    translate(Vec(translation));
+    translateFromLocal(Vec(translation));
 }
 
 float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
@@ -236,9 +252,9 @@ std::vector<Vec3Df> Mesh::baseToFrame(Mesh *base){
 
     for(unsigned int i=0; i<N; i++){
         Vec vWorld = base->frameToWorld(i);
-        v.push_back(worldToFrame(vWorld));
+        Vec3Df inFrame = worldToFrame(vWorld);
+        v.push_back(inFrame);
     }
-
     return v;
 }
 
@@ -248,7 +264,7 @@ Vec Mesh::frameToWorld(unsigned int index){
 }
 
 Vec3Df Mesh::worldToFrame(Vec v){
-   frame.localCoordinatesOf(v);
+   v = frame.localCoordinatesOf(v);
    return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
 }
 
@@ -285,6 +301,7 @@ void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translati
     Vec3Df centroidV = getCentroid(vertices);
     Vec3Df centroidC = getCentroid(correspondences);
     translation = centroidC - centroidV;
+
     std::cout << "Centroid c :" << centroidC[0] << " , " << centroidC[1] << " , " << centroidC[2] << std::endl;
     std::cout << "Centroid v :" << centroidV[0] << " , " << centroidV[1] << " , " << centroidV[2] << std::endl;
 

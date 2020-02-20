@@ -15,6 +15,8 @@ void Viewer::draw() {
     glPushMatrix();
     glMultMatrixd(manipulatedFrame()->matrix());
 
+    //QGLViewer::drawAxis(15.0);
+
     glColor3f(1.,1.,1.);
     for(unsigned int i=0; i<meshes.size(); i++) meshes[i]->draw();
     glPopMatrix();
@@ -43,9 +45,13 @@ void Viewer::openOFF(QString filename) {
     FileIO::openOFF(filename.toStdString(), vertices, triangles, neighbours, vertexTriangles);
 
     meshes[lastIndex]->init();
+    meshes[lastIndex]->setReferenceFrame(viewerFrame);
+
+    connect(meshes[lastIndex], &Mesh::updateViewer, this, &Viewer::toUpdate);
 
     // Set the camera
-    if(meshes.size()==1){
+    if(meshes.size()==baseMesh+1){
+        //meshes[baseMesh]->zero();
         Vec3Df center;
         double radius;
         MeshTools::computeAveragePosAndRadius(vertices, center, radius);
@@ -54,6 +60,10 @@ void Viewer::openOFF(QString filename) {
 
     std::cout << "File loaded " << std::endl;
 
+    update();
+}
+
+void Viewer::toUpdate(){
     update();
 }
 

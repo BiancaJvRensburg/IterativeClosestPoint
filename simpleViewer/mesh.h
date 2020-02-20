@@ -34,6 +34,8 @@ public:
     std::vector< std::vector<unsigned int>> &getVertexTriangles(){return vertexTriangles;}
     const std::vector< std::vector<unsigned int>> &getVertexTriangles()const {return vertexTriangles;}
 
+    void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
+
     void init();
     void draw();
 
@@ -51,17 +53,21 @@ public:
     void icp(Mesh *base);
     void rotateAroundAxis(Vec axis, double alpha);
     void rotateToBase(Mesh* base);
+    void zero();
+
+Q_SIGNALS:
+    void updateViewer();
 
 protected:
     void computeBB();
-    void zero();
     void alignWithBase(Mesh* base);
 
     void update();
     void recomputeNormals();
 
     void rotate(Quaternion r);
-    void translate(Vec t);
+    void translate(Vec t);                  // t defined in the world
+    void translateFromLocal(Vec t);         // t defined inside the frame
 
     void scaleToBase(Mesh* base);
     void matchDepthAxis(Mesh* base);

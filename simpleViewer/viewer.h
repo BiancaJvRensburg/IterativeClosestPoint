@@ -21,6 +21,7 @@ public Q_SLOTS:
     void rotateY();
     void rotateZ();
     void autoRotate();
+    void toUpdate();
 
 protected:
     virtual void draw();
