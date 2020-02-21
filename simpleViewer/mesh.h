@@ -28,12 +28,6 @@ public:
     std::vector<Triangle> &getTriangles(){return triangles;}
     const std::vector<Triangle> &getTriangles()const {return triangles;}
 
-    std::vector< std::vector<unsigned int>> &getVertexNeighbours(){return vertexNeighbours;}
-    const std::vector< std::vector<unsigned int>> &getVertexNeighbours()const {return vertexNeighbours;}
-
-    std::vector< std::vector<unsigned int>> &getVertexTriangles(){return vertexTriangles;}
-    const std::vector< std::vector<unsigned int>> &getVertexTriangles()const {return vertexTriangles;}
-
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
 
     void init();

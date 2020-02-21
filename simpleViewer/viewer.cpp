@@ -39,10 +39,8 @@ void Viewer::openOFF(QString filename) {
     meshes.push_back(new Mesh());
     std::vector<Vec3Df> &vertices = meshes[lastIndex]->getVertices();
     std::vector<Triangle> &triangles = meshes[lastIndex]->getTriangles();
-    std::vector< std::vector<unsigned int>> &neighbours = meshes[lastIndex]->getVertexNeighbours();
-    std::vector< std::vector<unsigned int>> &vertexTriangles = meshes[lastIndex]->getVertexTriangles();
 
-    FileIO::openOFF(filename.toStdString(), vertices, triangles, neighbours, vertexTriangles);
+    FileIO::openOFF(filename.toStdString(), vertices, triangles);
 
     meshes[lastIndex]->init();
     meshes[lastIndex]->setReferenceFrame(viewerFrame);
