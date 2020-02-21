@@ -6,7 +6,8 @@
 void Mesh::init(){
     computeBB();
     frame = Frame();
-    frame.setPosition(static_cast<double>(BBCentre[0]), static_cast<double>(BBCentre[1]), static_cast<double>(BBCentre[2]));
+    Vec3Df centroid = getCentroid(vertices);
+    frame.setPosition(static_cast<double>(centroid[0]), static_cast<double>(centroid[1]), static_cast<double>(centroid[2]));
     //zero();
     update();
 }
@@ -208,8 +209,11 @@ void Mesh::icp(Mesh* base){
 
         std::cout << "Finding alignment" << std::endl;
         Vec3Df translation;
-        findAlignment(correspondences, translation);
-        applyAlignment(translation);
+        Quaternion r;
+        Vec3Df centroid;
+
+        findAlignment(correspondences, translation, r, centroid);
+        applyAlignment(translation, r, centroid);
 
         std::cout << "Calculating error" << std::endl;
         error = getError(vertices, correspondences);
@@ -218,8 +222,9 @@ void Mesh::icp(Mesh* base){
     Q_EMIT updateViewer();
 }
 
-void Mesh::applyAlignment(Vec3Df &translation){
+void Mesh::applyAlignment(Vec3Df &translation, Quaternion &r, Vec3Df& centroid){
     translateFromLocal(Vec(translation));
+    frame.rotateAroundPoint(r, frame.localInverseCoordinatesOf(Vec(centroid)));
 }
 
 float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
@@ -286,17 +291,15 @@ void Mesh::rotateAroundAxis(Vec axis, double theta){
     rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
 }
 
-void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation){
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df &centroid){
     std::vector<Vec3Df> centralisedV = centralise(vertices);
     std::vector<Vec3Df> centralisedC = centralise(correspondences);
 
-    Vec3Df centroidV = getCentroid(vertices);
+    centroid = getCentroid(vertices);
     Vec3Df centroidC = getCentroid(correspondences);
 
-    Quaternion r = findRotation(centralisedV, centralisedC);
-    //frame.rotateAroundPoint(r, frame.localInverseCoordinatesOf(Vec(centroidV)));
-
-    translation = centroidC - centroidV;
+    r = findRotation(centralisedV, centralisedC);
+    translation = centroidC - centroid;
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
@@ -374,15 +377,7 @@ Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
         if(eigenValues(i) > eigenValues(maxI)) maxI = i;
     }
 
-    std::cout << "eigenvalues:" << std::endl;
-    std::cout << eigenValues << std::endl;
-    std::cout << maxI << " : " << eigenValues(maxI) << std::endl;
-    std::cout << "eigenvectors=" << std::endl;
-    std::cout << eigenVectors << std::endl;
-    std::cout << "Max : " << std::endl;
-    for(int i=0; i<4; i++) std::cout << eigenVectors(i, maxI) << std::endl;
-
-    Quaternion r = Quaternion(eigenVectors(0, maxI), eigenVectors(1, maxI), eigenVectors(2, maxI), eigenVectors(3, maxI));
+    Quaternion r = Quaternion(static_cast<double>(eigenVectors(0, maxI)), static_cast<double>(eigenVectors(1, maxI)), static_cast<double>(eigenVectors(2, maxI)), static_cast<double>(eigenVectors(3, maxI)));
 
     return r;
 }
