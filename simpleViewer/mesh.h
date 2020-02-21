@@ -83,7 +83,7 @@ protected:
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
     std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
     float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
-    std::vector<float> constructN(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+    Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
 
     void applyAlignment(Vec3Df& translation);
 

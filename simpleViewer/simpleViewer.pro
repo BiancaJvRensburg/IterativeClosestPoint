@@ -16,3 +16,4 @@ SOURCES  = main.cpp \
     viewer.cpp
 
 include( ../baseInclude.pri )
+INCLUDEPATH += "..\eigen-3.3.7\Eigen"

@@ -1,6 +1,7 @@
 #include "mesh.h"
 #include <algorithm>
 #include <float.h>
+#include <Eigenvalues>
 
 void Mesh::init(){
     computeBB();
@@ -291,10 +292,11 @@ void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translati
 
     Vec3Df centroidV = getCentroid(vertices);
     Vec3Df centroidC = getCentroid(correspondences);
-    translation = centroidC - centroidV;
 
-    // std::vector<float> N = constructN(centralisedV, centralisedC);
-    // TODO find the eigenvectors of N
+    Quaternion r = findRotation(centralisedV, centralisedC);
+    //frame.rotateAroundPoint(r, frame.localInverseCoordinatesOf(Vec(centroidV)));
+
+    translation = centroidC - centroidV;
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
@@ -327,10 +329,7 @@ float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, i
     return s;
 }
 
-std::vector<float> Mesh::constructN(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
-    std::vector<float> n;
-    n.resize(16);
-
+Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
     float sxx = productSum(a, b, 0, 0);
     float sxy = productSum(a, b, 0, 1);
     float sxz = productSum(a, b, 0, 2);
@@ -343,25 +342,47 @@ std::vector<float> Mesh::constructN(std::vector<Vec3Df> &a, std::vector<Vec3Df> 
     float szy = productSum(a, b, 2, 1);
     float szz = productSum(a, b, 2, 2);
 
-    n.push_back(sxx + syy + szz);
-    n.push_back(syz - szy);
-    n.push_back(-sxz + szx);
-    n.push_back(sxy - syz);
+    Eigen::Matrix<float, 4, 4> mat;
+    mat(0,0) = sxx + syy + szz;
+    mat(0,1) = syz - szy;
+    mat(0,2) = -sxz + szx;
+    mat(0,3) = sxy - syz;
 
-    n.push_back(-szy + syz);
-    n.push_back(sxx - szz - syy);
-    n.push_back(sxy + syx);
-    n.push_back(sxz + szx);
+    mat(1,0) = -szy + syz;
+    mat(1,1) = sxx - szz - syy;
+    mat(1,2) = sxy + syx;
+    mat(1,3) = sxz + szx;
 
-    n.push_back(szx - sxz);
-    n.push_back(syx + sxy);
-    n.push_back(syy - szz - sxx);
-    n.push_back(syz + szy);
+    mat(2,0) = szx - sxz;
+    mat(2,1) = syx + sxy;
+    mat(2,2) = syy - szz - sxx;
+    mat(2,3) = syz + szy;
 
-    n.push_back(-syx + sxy);
-    n.push_back(szx + sxz);
-    n.push_back(szy + syz);
-    n.push_back(szz - syy - sxx);
+    mat(3,0) = -syx + sxy;
+    mat(3,1) = szx + sxz;
+    mat(3,2) = szy + syz;
+    mat(3,3) = szz - syy - sxx;
 
-    return n;
+    Eigen::EigenSolver<Eigen::Matrix<float, 4, 4>> s(mat);
+    Eigen::VectorXcf eigenValuesComplex = s.eigenvalues();
+    Eigen::VectorXf eigenValues = eigenValuesComplex.real();
+    Eigen::MatrixXcf eigenVectorsComplex = s.eigenvectors();
+    Eigen::MatrixXf eigenVectors = eigenVectorsComplex.real();
+
+    int maxI = 0;
+    for(int i=1; i<4; i++){
+        if(eigenValues(i) > eigenValues(maxI)) maxI = i;
+    }
+
+    std::cout << "eigenvalues:" << std::endl;
+    std::cout << eigenValues << std::endl;
+    std::cout << maxI << " : " << eigenValues(maxI) << std::endl;
+    std::cout << "eigenvectors=" << std::endl;
+    std::cout << eigenVectors << std::endl;
+    std::cout << "Max : " << std::endl;
+    for(int i=0; i<4; i++) std::cout << eigenVectors(i, maxI) << std::endl;
+
+    Quaternion r = Quaternion(eigenVectors(0, maxI), eigenVectors(1, maxI), eigenVectors(2, maxI), eigenVectors(3, maxI));
+
+    return r;
 }
