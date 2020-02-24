@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <float.h>
 #include <Eigenvalues>
+#include <nanoflann.hpp>
 
 void Mesh::init(){
     computeBB();
@@ -265,21 +266,48 @@ Vec3Df Mesh::worldToFrame(Vec v){
    return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
 }
 
-// Brute force
+Eigen::MatrixXf Mesh::pointsToMatrix(std::vector<Vec3Df> &basePoints, const int dimension){
+    unsigned long long size = basePoints.size();
+    Eigen::MatrixXf mat(size, dimension);
+
+    for(unsigned int i=0; i<size; i++){
+        for(int j=0; j<dimension; j++){
+            mat(i,j) = basePoints[i][j];
+        }
+    }
+
+    return mat;
+}
+
+
 void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints){
     closestPoints.clear();
 
+    const int dimension = 3;
+    Eigen::MatrixXf mat = pointsToMatrix(baseVerticies, dimension);
+
+    std::cout<< "Conversion done" << std::endl;
+
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXf> KDTree;
+
+    KDTree index(dimension, mat, 10);
+    index.index->buildIndex();
+
     for(unsigned int i=0; i<vertices.size(); i++){
-        double minDist = DBL_MAX;
-        int minIndex = -1;
-        for(unsigned int j=0; j<baseVerticies.size()-5; j+=5){
-            double d = euclideanDistance(vertices[i], baseVerticies[j]);
-            if(d<minDist){
-                minDist = d;
-                minIndex = static_cast<int>(j);
-            }
-        }
-        closestPoints.push_back(baseVerticies[static_cast<unsigned int>(minIndex)]);
+        std::vector<float> queryPoint(dimension);
+        for(int j=0; j<dimension; j++) queryPoint[j] = vertices[i][j];
+
+        // Get the nearest neigbour
+        const int nbResults = 1;
+        std::vector<size_t> closest_indicies(nbResults);
+        std::vector<float> distances(nbResults);
+
+        nanoflann::KNNResultSet<float> resultSet(nbResults);
+        resultSet.init(&closest_indicies[0], &distances[0]);
+
+        unsigned long long nMatches = index.index->findNeighbors(resultSet, &queryPoint[0], nanoflann::SearchParams(10));
+
+        closestPoints.push_back(baseVerticies[closest_indicies[0]]);
     }
 }
 

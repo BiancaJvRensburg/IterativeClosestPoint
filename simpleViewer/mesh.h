@@ -5,6 +5,7 @@
 #include "Triangle.h"
 #include <queue>
 #include <QGLViewer/qglviewer.h>
+#include <Eigenvalues>
 
 using namespace qglviewer;
 
@@ -72,6 +73,7 @@ protected:
 
     void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
     double euclideanDistance(Vec3Df a, Vec3Df b);
+    Eigen::MatrixXf pointsToMatrix(std::vector<Vec3Df>& basePoints, const int dimension);
 
     void findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df& centroid);
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
