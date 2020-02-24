@@ -198,28 +198,32 @@ void Mesh::matchDepthAxis(Mesh* base){
 
 void Mesh::icp(Mesh* base){
     int maxIterations = 2;
-    float errorThreshold = 50.f;
+    float errorThreshold = 0.5f;
     int it = 0;
     float error = FLT_MAX;
 
     //while(it<maxIterations && error > errorThreshold){
         std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
         std::vector<Vec3Df> correspondences;
-        std::cout << "Getting correspondences " << std::endl;
-        findClosestPoints(basePoints, correspondences);
+        std::vector<float> distances;
+        //std::cout << "Getting correspondences " << std::endl;
+        findClosestPoints(basePoints, correspondences, distances);
 
         std::cout << "Finding alignment" << std::endl;
         Vec3Df translation;
         Quaternion r;
         Vec3Df centroid;
 
-        findAlignment(correspondences, translation, r, centroid);
+        std::vector<float> weights;
+        findWeights(weights, distances, 0);
+        findAlignment(correspondences, translation, r, centroid, weights);
         applyAlignment(translation, r, centroid);
 
-        std::cout << "Calculating error" << std::endl;
+        //std::cout << "Calculating error" << std::endl;
         error = getError(vertices, correspondences);
         it++;
-   // }
+        std::cout << "Error : " << error << std::endl;
+    //}
     Q_EMIT updateViewer();
 }
 
@@ -280,13 +284,12 @@ Eigen::MatrixXf Mesh::pointsToMatrix(std::vector<Vec3Df> &basePoints, const int 
 }
 
 
-void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints){
+void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints, std::vector<float> &minDistances){
     closestPoints.clear();
+    minDistances.clear();
 
     const int dimension = 3;
     Eigen::MatrixXf mat = pointsToMatrix(baseVerticies, dimension);
-
-    std::cout<< "Conversion done" << std::endl;
 
     typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXf> KDTree;
 
@@ -295,7 +298,7 @@ void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec
 
     for(unsigned int i=0; i<vertices.size(); i++){
         std::vector<float> queryPoint(dimension);
-        for(int j=0; j<dimension; j++) queryPoint[j] = vertices[i][j];
+        for(unsigned int j=0; j<dimension; j++) queryPoint[j] = vertices[i][j];
 
         // Get the nearest neigbour
         const int nbResults = 1;
@@ -308,7 +311,25 @@ void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec
         unsigned long long nMatches = index.index->findNeighbors(resultSet, &queryPoint[0], nanoflann::SearchParams(10));
 
         closestPoints.push_back(baseVerticies[closest_indicies[0]]);
+        minDistances.push_back(distances[0]);
     }
+}
+
+void Mesh::findWeights(std::vector<float> &weights, std::vector<float> &distances, int weightType){
+    weights.clear();
+
+    if(weightType==0){
+        float maxDist = 0;
+        for(unsigned int i=0; i<distances.size(); i++){
+            float d = distances[i];
+            if(d > maxDist) maxDist = d;
+        }
+        for(unsigned int i=0; i<distances.size(); i++) weights.push_back( findWeightDistance(maxDist, distances[i]));
+    }
+}
+
+float Mesh::findWeightDistance(float &maxDistance, float &distance){
+    return 1.f - (distance / maxDistance);
 }
 
 double Mesh::euclideanDistance(Vec3Df a, Vec3Df b){
@@ -319,15 +340,23 @@ void Mesh::rotateAroundAxis(Vec axis, double theta){
     rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
 }
 
-void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df &centroid){
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df &centroid, std::vector<float> &weights){
     std::vector<Vec3Df> centralisedV = centralise(vertices);
     std::vector<Vec3Df> centralisedC = centralise(correspondences);
 
     centroid = getCentroid(vertices);
     Vec3Df centroidC = getCentroid(correspondences);
 
-    r = findRotation(centralisedV, centralisedC);
-    translation = centroidC - centroid;
+    r = findRotation(centralisedV, centralisedC, weights);
+    translation = centroidC - centroid; //findTranslation(centralisedV, centralisedC, weights);
+}
+
+Vec3Df Mesh::findTranslation(std::vector<Vec3Df> &points, std::vector<Vec3Df> &correspondances, std::vector<float> &weights){
+    Vec3Df translation = Vec3Df(0,0,0);
+
+    for(unsigned int i=0; i<points.size(); i++){
+        translation += weights[i] * (points[i] - correspondances[i]);
+    }
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
@@ -351,7 +380,7 @@ std::vector<Vec3Df> Mesh::centralise(std::vector<Vec3Df> &v){
     return centralised;
 }
 
-float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
+float Mesh::productSum(std::vector<float> &weights, std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
     float s = 0;
     unsigned long long N = a.size();
 
@@ -360,24 +389,24 @@ float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, i
     return s;
 }
 
-Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
-    float sxx = productSum(a, b, 0, 0);
-    float sxy = productSum(a, b, 0, 1);
-    float sxz = productSum(a, b, 0, 2);
+Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, std::vector<float> &weights){
+    float sxx = productSum(weights, a, b, 0, 0);
+    float sxy = productSum(weights, a, b, 0, 1);
+    float sxz = productSum(weights, a, b, 0, 2);
 
-    float syx = productSum(a, b, 1, 0);
-    float syy = productSum(a, b, 1, 1);
-    float syz = productSum(a, b, 1, 2);
+    float syx = productSum(weights, a, b, 1, 0);
+    float syy = productSum(weights, a, b, 1, 1);
+    float syz = productSum(weights, a, b, 1, 2);
 
-    float szx = productSum(a, b, 2, 0);
-    float szy = productSum(a, b, 2, 1);
-    float szz = productSum(a, b, 2, 2);
+    float szx = productSum(weights, a, b, 2, 0);
+    float szy = productSum(weights, a, b, 2, 1);
+    float szz = productSum(weights, a, b, 2, 2);
 
     Eigen::Matrix<float, 4, 4> mat;
     mat(0,0) = sxx + syy + szz;
     mat(0,1) = syz - szy;
     mat(0,2) = -sxz + szx;
-    mat(0,3) = sxy - syz;
+    mat(0,3) = sxy - syx;
 
     mat(1,0) = -szy + syz;
     mat(1,1) = sxx - szz - syy;

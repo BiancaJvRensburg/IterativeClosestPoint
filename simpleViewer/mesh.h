@@ -71,15 +71,18 @@ protected:
     Vec frameToWorld(unsigned int index);       // convert the vertice from local to world coordinates
     Vec3Df worldToFrame(Vec v);                 // convert the vertice from world to local coordinates
 
-    void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
+    void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints, std::vector<float> &minDistances);
     double euclideanDistance(Vec3Df a, Vec3Df b);
     Eigen::MatrixXf pointsToMatrix(std::vector<Vec3Df>& basePoints, const int dimension);
+    void findWeights(std::vector<float> &weights, std::vector<float> &distances, int weightType);
+    float findWeightDistance(float& maxDistance, float &distance);
 
-    void findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df& centroid);
+    void findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df& centroid, std::vector<float> &weights);
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
     std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
-    float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
-    Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+    float productSum(std::vector<float> &weights, std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
+    Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, std::vector<float> &weights);
+    Vec3Df findTranslation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, std::vector<float> &weights);
 
     void applyAlignment(Vec3Df& translation, Quaternion& r, Vec3Df& centroid);
 
