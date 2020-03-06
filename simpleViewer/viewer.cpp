@@ -49,11 +49,10 @@ void Viewer::openOFF(QString filename) {
 
     // Set the camera
     if(meshes.size()==baseMesh+1){
-        //meshes[baseMesh]->zero();
-        Vec3Df center;
-        double radius;
-        MeshTools::computeAveragePosAndRadius(vertices, center, radius);
-        updateCamera(center, static_cast<float>(radius));
+        Vec c = meshes[baseMesh]->getBBCentre();
+        Vec3Df center = Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
+        float radius = meshes[baseMesh]->getBBRadius();
+        updateCamera(center, radius);
     }
 
     std::cout << "File loaded " << std::endl;
@@ -72,8 +71,12 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 }
 
 void Viewer::registration(){
-    for(unsigned int i=1; i<meshes.size(); i++) meshes[1]->icp(meshes[baseMesh]);
+    for(unsigned int i=1; i<meshes.size(); i++) meshes[i]->icp(meshes[baseMesh]);
     update();
+}
+
+void Viewer::registrationSingleStep(){
+    for(unsigned int i=1; i<meshes.size(); i++) meshes[i]->icpSingleIteration(meshes[baseMesh]);
 }
 
 void Viewer::rotateX(){

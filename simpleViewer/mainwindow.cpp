@@ -58,7 +58,10 @@ void MainWindow::initFileActions(){
     QAction *openFileAction = new QAction("Open mesh", this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
 
-    QAction *icpAction = new QAction("Registration iteration", this);
+    QAction *icpStepAction = new QAction("Registration iteration", this);
+    connect(icpStepAction, &QAction::triggered, view, &Viewer::registrationSingleStep);
+
+    QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
    /* QAction *autoRAction = new QAction("Auto align", this);
@@ -75,6 +78,7 @@ void MainWindow::initFileActions(){
 
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
+    fileActionGroup->addAction(icpStepAction);
     //fileActionGroup->addAction(autoRAction);
     fileActionGroup->addAction(rxAction);
     fileActionGroup->addAction(ryAction);

@@ -9,8 +9,6 @@
 
 using namespace qglviewer;
 
-enum Side {INTERIOR, EXTERIOR};
-
 class Mesh : public QObject
 {
     Q_OBJECT
@@ -36,7 +34,8 @@ public:
 
     void clear();
 
-    float getBBRadius();
+    float getBBRadius(){ return radius; }
+    Vec getBBCentre(){ return frame.localInverseCoordinatesOf(Vec(BBCentre)); }
 
     typedef std::priority_queue< std::pair< float , int > , std::deque< std::pair< float , int > > , std::greater< std::pair< float , int > > > FacesQueue;
 
@@ -46,6 +45,7 @@ public:
     Vec getDepthAxis(bool isLocal);
 
     void icp(Mesh *base);
+    void icpSingleIteration(Mesh *base);
     void rotateAroundAxis(Vec axis, double alpha);
     void rotateToBase(Mesh* base);
     void zero();
@@ -60,6 +60,8 @@ protected:
     void update();
     void recomputeNormals();
 
+    void icpStep(Mesh *base);
+
     void rotate(Quaternion r);
     void translate(Vec t);                  // t defined in the world
     void translateFromLocal(Vec t);         // t defined inside the frame
@@ -69,22 +71,25 @@ protected:
 
     std::vector<Vec3Df> baseToFrame(Mesh* base);
     Vec frameToWorld(unsigned int index);       // convert the vertice from local to world coordinates
+    Vec3Df frameToWorld(Vec3Df v);
     Vec3Df worldToFrame(Vec v);                 // convert the vertice from world to local coordinates
+    void backToWorld(std::vector<Vec3Df> &v);   // convert the verticies from this frame back to the world coordinates
 
-    void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints, std::vector<float> &minDistances);
+    void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
     double euclideanDistance(Vec3Df a, Vec3Df b);
-    Eigen::MatrixXf pointsToMatrix(std::vector<Vec3Df>& basePoints, const int dimension);
-    void findWeights(std::vector<float> &weights, std::vector<float> &distances, int weightType);
-    float findWeightDistance(float& maxDistance, float &distance);
+    Eigen::MatrixXd pointsToMatrix(std::vector<Vec3Df>& basePoints, const int dimension);
+    void shiftQuaternion(Quaternion &q);
 
-    void findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df& centroid, std::vector<float> &weights);
+
+    void findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r);
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
     std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
-    float productSum(std::vector<float> &weights, std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
-    Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, std::vector<float> &weights);
-    Vec3Df findTranslation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, std::vector<float> &weights);
+    float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
+    Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
+    void printEulerAngles(const Quaternion &q);
+    Vec3Df findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df>& correspondences);
 
-    void applyAlignment(Vec3Df& translation, Quaternion& r, Vec3Df& centroid);
+    void applyAlignment(Quaternion& r, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &correspondances);
 
     float getError(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
     float euclideanNorm(Vec3Df a);
@@ -100,13 +105,13 @@ protected:
     std::vector <Triangle> triangles;       // starting triangles
     std::vector<Vec3Df> normals;
     std::vector<Vec3Df> verticesNormals;
-    std::vector< std::vector<unsigned int>> vertexNeighbours;       // each vertex's neighbours
-    std::vector< std::vector<unsigned int>> vertexTriangles;        // the triangles each vertex belongs to
 
     Vec3Df BBMin;
     Vec3Df BBMax;
     Vec3Df BBCentre;
     float radius;
+
+    float distError;
 
     int normalDirection;
 

@@ -87,42 +87,4 @@ namespace FileIO{
     }
 }
 
-namespace MeshTools{
-    template <typename Point>
-    void computeAveragePosAndRadius ( const std::vector<Point> & points, Point & center, double & radius){
-        center = Point (0.0, 0.0, 0.0);
-        for (unsigned int i = 0; i < points.size (); i++)
-            center += points[i];
-        center /= float (points.size ());
-        radius = 0.0;
-        for (unsigned int i = 0; i < points.size (); i++) {
-            float vDistance = (points[i] - center).norm();
-            if (static_cast<double>(vDistance) > radius)
-                radius = static_cast<double>(vDistance);
-        }
-    }
-
-    template <typename Point>
-    void scaleAndCenterToUnitBox ( std::vector<Point> & points, Point & center, double & scale ){
-        computeAveragePosAndRadius (points, center, scale);
-        for (unsigned int i = 0; i < points.size (); i++){
-            points[i] = (points[i] - center)/ scale;
-        }
-
-    }
-
-    template <typename Point>
-    bool isVisiblePoint( const Point & p, const Point & clippingNormal, const Point & pointOnClipping ){
-        Point pos = p - pointOnClipping;
-        float dotProduct = 0.;
-        for(int v = 0 ; v < 3; v ++)
-            dotProduct += clippingNormal[v]*pos[v];
-
-        if( static_cast<double>(dotProduct) < 0.) return false;
-
-        return true;
-    }
-
-}
-
 #endif // MESHREADER_H

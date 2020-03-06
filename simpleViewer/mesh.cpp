@@ -9,8 +9,9 @@ void Mesh::init(){
     frame = Frame();
     Vec3Df centroid = getCentroid(vertices);
     frame.setPosition(static_cast<double>(centroid[0]), static_cast<double>(centroid[1]), static_cast<double>(centroid[2]));
-    //zero();
+    zero();
     update();
+    distError = FLT_MAX;
 }
 
 void Mesh::computeBB(){
@@ -27,7 +28,7 @@ void Mesh::computeBB(){
         }
     }
 
-    radius = (BBMax - BBMin).norm();
+    radius = (BBMax - BBMin).norm() / 2.0f;
 
     BBCentre = (BBMax + BBMin)/2.0f;
 }
@@ -117,14 +118,9 @@ void Mesh::draw()
     glPopMatrix();
 }
 
-float Mesh::getBBRadius(){
-    computeBB();
-    return radius;
-}
-
 void Mesh::zero(){
-    Vec BBCentreWorld = frame.localInverseCoordinatesOf(Vec(BBCentre[0],BBCentre[1],BBCentre[2]));
-    Vec3Df t = Vec3Df(BBCentreWorld.x, BBCentreWorld.y, BBCentreWorld.z);
+    Vec BBCentreWorld = frame.localInverseCoordinatesOf(Vec(static_cast<double>(BBCentre[0]),static_cast<double>(BBCentre[1]),static_cast<double>(BBCentre[2])));
+    Vec3Df t = Vec3Df(static_cast<float>(BBCentreWorld.x), static_cast<float>(BBCentreWorld.y), static_cast<float>(BBCentreWorld.z));
     for(unsigned int i=0; i<vertices.size(); i++){
             vertices[i] -= t;
         }
@@ -144,7 +140,7 @@ void Mesh::translateFromLocal(Vec t){
 }
 
 void Mesh::rotate(Quaternion r){
-    Vec rotationPoint = Vec(BBCentre[0], BBCentre[1], BBCentre[2]);
+    Vec rotationPoint = Vec(static_cast<double>(BBCentre[0]), static_cast<double>(BBCentre[1]), static_cast<double>(BBCentre[2]));
     rotationPoint = frame.inverseCoordinatesOf(rotationPoint);
     frame.rotateAroundPoint(r, rotationPoint);
 }
@@ -197,39 +193,47 @@ void Mesh::matchDepthAxis(Mesh* base){
 }
 
 void Mesh::icp(Mesh* base){
-    int maxIterations = 2;
-    float errorThreshold = 0.5f;
+    int maxIterations = 200;
+    //float errorThreshold = 0.1f;
     int it = 0;
-    float error = FLT_MAX;
+    float deltaError = 1;
+    float prevError = 0;
 
-    //while(it<maxIterations && error > errorThreshold){
-        std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
-        std::vector<Vec3Df> correspondences;
-        std::vector<float> distances;
-        //std::cout << "Getting correspondences " << std::endl;
-        findClosestPoints(basePoints, correspondences, distances);
-
-        std::cout << "Finding alignment" << std::endl;
-        Vec3Df translation;
-        Quaternion r;
-        Vec3Df centroid;
-
-        std::vector<float> weights;
-        findWeights(weights, distances, 0);
-        findAlignment(correspondences, translation, r, centroid, weights);
-        applyAlignment(translation, r, centroid);
-
-        //std::cout << "Calculating error" << std::endl;
-        error = getError(vertices, correspondences);
+    while(it<maxIterations && deltaError > 0){
+        icpStep(base);
         it++;
-        std::cout << "Error : " << error << std::endl;
-    //}
+        deltaError = abs(prevError - distError);
+        prevError = distError;
+    }
+
+    distError = FLT_MAX;
+}
+
+void Mesh::icpSingleIteration(Mesh *base){
+    icpStep(base);
     Q_EMIT updateViewer();
 }
 
-void Mesh::applyAlignment(Vec3Df &translation, Quaternion &r, Vec3Df& centroid){
-    translateFromLocal(Vec(translation));
-    frame.rotateAroundPoint(r, frame.localInverseCoordinatesOf(Vec(centroid)));
+void Mesh::icpStep(Mesh* base){
+    std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+    std::vector<Vec3Df> correspondences;
+
+    findClosestPoints(basePoints, correspondences);
+    Quaternion r;
+    findAlignment(correspondences, r);
+
+    std::vector<Vec3Df> worldVertices = vertices;
+    backToWorld(worldVertices);
+    backToWorld(correspondences);
+    applyAlignment(r, worldVertices, correspondences);
+
+    distError = getError(worldVertices, correspondences);
+    std::cout << "Error : " << distError << std::endl;
+}
+
+void Mesh::applyAlignment(Quaternion &r, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &worldCorrespondances){
+    frame.rotate(r);
+    translate(Vec(findTranslation(worldVertices, worldCorrespondances)));
 }
 
 float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
@@ -241,7 +245,7 @@ float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
         error += ei*ei;
     }
 
-    return error;
+    return error / static_cast<float>(N);
 }
 
 float Mesh::euclideanNorm(Vec3Df a){
@@ -265,18 +269,29 @@ Vec Mesh::frameToWorld(unsigned int index){
     return frame.localInverseCoordinatesOf(Vec(v));
 }
 
+Vec3Df Mesh::frameToWorld(Vec3Df v){
+    Vec c = frame.localInverseCoordinatesOf(Vec(v));
+    return Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
+}
+
 Vec3Df Mesh::worldToFrame(Vec v){
    v = frame.localCoordinatesOf(v);
    return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
 }
 
-Eigen::MatrixXf Mesh::pointsToMatrix(std::vector<Vec3Df> &basePoints, const int dimension){
+void Mesh::backToWorld(std::vector<Vec3Df> &v){
+    for(unsigned int i=0; i<v.size(); i++){
+        v[i] = frameToWorld(v[i]);
+    }
+}
+
+Eigen::MatrixXd Mesh::pointsToMatrix(std::vector<Vec3Df> &basePoints, const int dimension){
     unsigned long long size = basePoints.size();
-    Eigen::MatrixXf mat(size, dimension);
+    Eigen::MatrixXd mat(size, dimension);
 
     for(unsigned int i=0; i<size; i++){
         for(int j=0; j<dimension; j++){
-            mat(i,j) = basePoints[i][j];
+            mat(i,j) = static_cast<double>(basePoints[i][j]);
         }
     }
 
@@ -284,52 +299,33 @@ Eigen::MatrixXf Mesh::pointsToMatrix(std::vector<Vec3Df> &basePoints, const int 
 }
 
 
-void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints, std::vector<float> &minDistances){
+void Mesh::findClosestPoints(std::vector<Vec3Df>& baseVerticies, std::vector<Vec3Df>& closestPoints){
     closestPoints.clear();
-    minDistances.clear();
 
     const int dimension = 3;
-    Eigen::MatrixXf mat = pointsToMatrix(baseVerticies, dimension);
+    Eigen::MatrixXd mat = pointsToMatrix(baseVerticies, dimension);
 
-    typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXf> KDTree;
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd> KDTree;
 
     KDTree index(dimension, mat, 10);
     index.index->buildIndex();
 
     for(unsigned int i=0; i<vertices.size(); i++){
-        std::vector<float> queryPoint(dimension);
-        for(unsigned int j=0; j<dimension; j++) queryPoint[j] = vertices[i][j];
+        std::vector<double> queryPoint(dimension);
+        for(unsigned int j=0; j<dimension; j++) queryPoint[j] = static_cast<double>(vertices[i][static_cast<int>(j)]);
 
         // Get the nearest neigbour
         const int nbResults = 1;
         std::vector<size_t> closest_indicies(nbResults);
-        std::vector<float> distances(nbResults);
+        std::vector<double> distances(nbResults);
 
-        nanoflann::KNNResultSet<float> resultSet(nbResults);
+        nanoflann::KNNResultSet<double> resultSet(nbResults);
         resultSet.init(&closest_indicies[0], &distances[0]);
 
-        unsigned long long nMatches = index.index->findNeighbors(resultSet, &queryPoint[0], nanoflann::SearchParams(10));
+        index.index->findNeighbors(resultSet, &queryPoint[0], nanoflann::SearchParams(10));
 
         closestPoints.push_back(baseVerticies[closest_indicies[0]]);
-        minDistances.push_back(distances[0]);
     }
-}
-
-void Mesh::findWeights(std::vector<float> &weights, std::vector<float> &distances, int weightType){
-    weights.clear();
-
-    if(weightType==0){
-        float maxDist = 0;
-        for(unsigned int i=0; i<distances.size(); i++){
-            float d = distances[i];
-            if(d > maxDist) maxDist = d;
-        }
-        for(unsigned int i=0; i<distances.size(); i++) weights.push_back( findWeightDistance(maxDist, distances[i]));
-    }
-}
-
-float Mesh::findWeightDistance(float &maxDistance, float &distance){
-    return 1.f - (distance / maxDistance);
 }
 
 double Mesh::euclideanDistance(Vec3Df a, Vec3Df b){
@@ -340,23 +336,21 @@ void Mesh::rotateAroundAxis(Vec axis, double theta){
     rotate(Quaternion(cos(theta/2.0)*axis.x, cos(theta/2.0)*axis.y, cos(theta/2.0)*axis.z, sin(theta/2.0)));
 }
 
-void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Vec3Df& translation, Quaternion &r, Vec3Df &centroid, std::vector<float> &weights){
+
+// Note : the problem is BEFORE HERE, SVD and eigen decomposition give the same rotation
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r){
     std::vector<Vec3Df> centralisedV = centralise(vertices);
     std::vector<Vec3Df> centralisedC = centralise(correspondences);
 
-    centroid = getCentroid(vertices);
-    Vec3Df centroidC = getCentroid(correspondences);
-
-    r = findRotation(centralisedV, centralisedC, weights);
-    translation = centroidC - centroid; //findTranslation(centralisedV, centralisedC, weights);
+    r = findRotation(centralisedV, centralisedC);
 }
 
-Vec3Df Mesh::findTranslation(std::vector<Vec3Df> &points, std::vector<Vec3Df> &correspondances, std::vector<float> &weights){
-    Vec3Df translation = Vec3Df(0,0,0);
+// To be called after rotation is applied
+Vec3Df Mesh::findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &correspondances){
+    Vec3Df centroid = getCentroid(worldVertices);
+    Vec3Df centroidC = getCentroid(correspondances);
 
-    for(unsigned int i=0; i<points.size(); i++){
-        translation += weights[i] * (points[i] - correspondances[i]);
-    }
+    return centroidC - centroid;
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
@@ -380,27 +374,27 @@ std::vector<Vec3Df> Mesh::centralise(std::vector<Vec3Df> &v){
     return centralised;
 }
 
-float Mesh::productSum(std::vector<float> &weights, std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
+float Mesh::productSum(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, int aI, int bI){
     float s = 0;
     unsigned long long N = a.size();
 
-    for(unsigned int i=0; i<N; i++) s += a[i][aI] + b[i][bI];
+    for(unsigned int i=0; i<N; i++) s += a[i][aI] * b[i][bI];
 
-    return s;
+    return s / static_cast<float>(N);
 }
 
-Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, std::vector<float> &weights){
-    float sxx = productSum(weights, a, b, 0, 0);
-    float sxy = productSum(weights, a, b, 0, 1);
-    float sxz = productSum(weights, a, b, 0, 2);
+Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
+    float sxx = productSum(a, b, 0, 0);
+    float sxy = productSum(a, b, 0, 1);
+    float sxz = productSum(a, b, 0, 2);
 
-    float syx = productSum(weights, a, b, 1, 0);
-    float syy = productSum(weights, a, b, 1, 1);
-    float syz = productSum(weights, a, b, 1, 2);
+    float syx = productSum(a, b, 1, 0);
+    float syy = productSum(a, b, 1, 1);
+    float syz = productSum(a, b, 1, 2);
 
-    float szx = productSum(weights, a, b, 2, 0);
-    float szy = productSum(weights, a, b, 2, 1);
-    float szz = productSum(weights, a, b, 2, 2);
+    float szx = productSum(a, b, 2, 0);
+    float szy = productSum(a, b, 2, 1);
+    float szz = productSum(a, b, 2, 2);
 
     Eigen::Matrix<float, 4, 4> mat;
     mat(0,0) = sxx + syy + szz;
@@ -435,6 +429,68 @@ Quaternion Mesh::findRotation(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b, st
     }
 
     Quaternion r = Quaternion(static_cast<double>(eigenVectors(0, maxI)), static_cast<double>(eigenVectors(1, maxI)), static_cast<double>(eigenVectors(2, maxI)), static_cast<double>(eigenVectors(3, maxI)));
-
+    shiftQuaternion(r);
     return r;
+}
+
+void Mesh::shiftQuaternion(Quaternion &q){
+    /* A quaternion is usually defined as q = (s, x, y, z)
+     * In libqglviewer its defined as q = (x, y, z, s)
+     * We have to shift any quaternion result we have in order for it to fit the libqglviewer definition
+    */
+
+    Quaternion x = q;
+    for(int i=0; i<4; i++){
+        q[i] = x[(i+1)%4];
+    }
+}
+
+void Mesh::printEulerAngles(const Quaternion &q){
+    Eigen::Matrix<double, 4, 4> mat;
+    Eigen::Matrix<double, 4, 4> matBar;
+
+    mat(0,0) = q[0];
+    mat(0,1) = -q[1];
+    mat(0,2) = -q[2];
+    mat(0,3) = -q[3];
+
+    mat(1,0) = q[1];
+    mat(1,1) = q[0];
+    mat(1,2) = -q[3];
+    mat(1,3) = q[2];
+
+    mat(2,0) = q[2];
+    mat(2,1) = q[3];
+    mat(2,2) = q[0];
+    mat(2,3) = -q[1];
+
+    mat(3,0) = q[3];
+    mat(3,1) = -q[2];
+    mat(3,2) = q[1];
+    mat(3,3) = q[0];
+
+    matBar(0,0) = q[0];
+    matBar(0,1) = -q[1];
+    matBar(0,2) = -q[2];
+    matBar(0,3) = -q[3];
+
+    matBar(1,0) = q[1];
+    matBar(1,1) = q[0];
+    matBar(1,2) = q[3];
+    matBar(1,3) = -q[2];
+
+    matBar(2,0) = q[2];
+    matBar(2,1) = -q[3];
+    matBar(2,2) = q[0];
+    matBar(2,3) = q[1];
+
+    matBar(3,0) = q[3];
+    matBar(3,1) = q[2];
+    matBar(3,2) = -q[1];
+    matBar(3,3) = q[0];
+
+    std::cout << "Euler angles : " << std::endl;
+    Eigen::Matrix<double, 4, 4> r = matBar * mat;
+    std::cout << r;
+
 }

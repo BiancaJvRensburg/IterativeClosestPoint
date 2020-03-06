@@ -17,6 +17,7 @@ public :
 public Q_SLOTS:
     void openOFF(QString filename);
     void registration();
+    void registrationSingleStep();
     void rotateX();     // rotate 90° around the x axis
     void rotateY();
     void rotateZ();
