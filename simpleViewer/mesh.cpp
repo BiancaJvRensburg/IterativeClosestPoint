@@ -4,14 +4,19 @@
 #include <Eigenvalues>
 #include <nanoflann.hpp>
 
-void Mesh::init(){
+void Mesh::init(int id){
     computeBB();
+
     frame = Frame();
     Vec3Df centroid = getCentroid(vertices);
     frame.setPosition(static_cast<double>(centroid[0]), static_cast<double>(centroid[1]), static_cast<double>(centroid[2]));
+
+    distError = FLT_MAX;
+    this->id = id;
+    getColour();
+
     zero();
     update();
-    distError = FLT_MAX;
 }
 
 void Mesh::computeBB(){
@@ -52,18 +57,19 @@ void Mesh::recomputeNormals () {
 
 void Mesh::computeTriangleNormals(){
     normals.clear();
+    unitNormals.clear();
 
     for(unsigned int i = 0 ; i < triangles.size() ; i++){
-        normals.push_back(computeTriangleNormal(i));
+        computeTriangleNormal(i);
     }
 }
 
-Vec3Df Mesh::computeTriangleNormal(unsigned int id ){
+void Mesh::computeTriangleNormal(unsigned int id ){
     const Triangle & t = triangles[id];
     Vec3Df normal = Vec3Df::crossProduct(vertices[t.getVertex (1)] - vertices[t.getVertex (0)], vertices[t.getVertex (2)]- vertices[t.getVertex (0)]);
+    normals.push_back(normal);
     normal.normalize();
-    return normal;
-
+    unitNormals.push_back(normal);
 }
 
 void Mesh::computeVerticesNormals(){
@@ -84,7 +90,15 @@ void Mesh::computeVerticesNormals(){
     }
 }
 
-// Access and colour each individual vertex here
+void Mesh::calculateBarycentres(){
+    barycentres.clear();
+
+    for(unsigned int i=0; i<triangles.size(); i++){
+        Vec3Df c = (vertices[triangles[i].getVertex(0)] + vertices[triangles[i].getVertex(1)] + vertices[triangles[i].getVertex(2)]) / 3.f;
+        barycentres.push_back(c);
+    }
+}
+
 void Mesh::glTriangle(unsigned int i){
     const Triangle & t = triangles[i];
 
@@ -92,8 +106,6 @@ void Mesh::glTriangle(unsigned int i){
         glNormal(verticesNormals[t.getVertex(j)]*normalDirection);
         glVertex(vertices[t.getVertex(j)]);
     }
-
-    glColor3f(1.0, 1.0, 1.0);
 }
 
 void Mesh::draw()
@@ -106,9 +118,11 @@ void Mesh::draw()
 
     glBegin (GL_TRIANGLES);
 
+    glColor3f(red, green, blue);
+
     for(unsigned int i = 0 ; i < triangles.size(); i++) glTriangle(i);
 
-    //QGLViewer::drawAxis(15.0);
+    glColor3f(1.f, 1.f, 1.f);
 
     glEnd();
 
@@ -154,11 +168,15 @@ void Mesh::scaleToBase(Mesh *base){
     float radiusBase = base->getBBRadius();
     float ratio = radiusBase / radius;
 
-    for(unsigned int i=0; i<vertices.size(); i++) vertices[i] *= ratio;
-    BBMax *= ratio;
-    BBMin *= ratio;
-    BBCentre *= ratio;
-    radius = radiusBase;
+    uniformScale(ratio);
+}
+
+void Mesh::uniformScale(float &s){
+    for(unsigned int i=0; i<vertices.size(); i++) vertices[i] *= s;
+    BBMax *= s;
+    BBMin *= s;
+    BBCentre *= s;
+    radius *= s;
 }
 
 void Mesh::rotateToBase(Mesh *base){
@@ -206,11 +224,14 @@ void Mesh::icp(Mesh* base){
         prevError = distError;
     }
 
+    //std::cout << "Varifold distance : " << varifoldDistance(this, base) << std::endl;
+
     distError = FLT_MAX;
 }
 
 void Mesh::icpSingleIteration(Mesh *base){
     icpStep(base);
+    //std::cout << "Varifold distance : " << varifoldDistance(this, base) << std::endl;
     Q_EMIT updateViewer();
 }
 
@@ -218,21 +239,23 @@ void Mesh::icpStep(Mesh* base){
     std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
     std::vector<Vec3Df> correspondences;
 
-    findClosestPoints(basePoints, correspondences);
+    findClosestPointsVarifold(base, basePoints, correspondences);
     Quaternion r;
-    findAlignment(correspondences, r);
+    float s;
+    findAlignment(correspondences, r, s);
 
     std::vector<Vec3Df> worldVertices = vertices;
     backToWorld(worldVertices);
     backToWorld(correspondences);
-    applyAlignment(r, worldVertices, correspondences);
+    applyAlignment(r, s, worldVertices, correspondences);
 
     distError = getError(worldVertices, correspondences);
     std::cout << "Error : " << distError << std::endl;
 }
 
-void Mesh::applyAlignment(Quaternion &r, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &worldCorrespondances){
+void Mesh::applyAlignment(Quaternion &r, float &s, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &worldCorrespondances){
     frame.rotate(r);
+    uniformScale(s);
     translate(Vec(findTranslation(worldVertices, worldCorrespondances)));
 }
 
@@ -249,7 +272,11 @@ float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){
 }
 
 float Mesh::euclideanNorm(Vec3Df a){
-    return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+    return sqrt(euclideanNormSquared(a));
+}
+
+float Mesh::euclideanNormSquared(Vec3Df a){
+    return a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
 }
 
 std::vector<Vec3Df> Mesh::baseToFrame(Mesh *base){
@@ -338,11 +365,12 @@ void Mesh::rotateAroundAxis(Vec axis, double theta){
 
 
 // Note : the problem is BEFORE HERE, SVD and eigen decomposition give the same rotation
-void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r){
+void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r, float &s){
     std::vector<Vec3Df> centralisedV = centralise(vertices);
     std::vector<Vec3Df> centralisedC = centralise(correspondences);
 
     r = findRotation(centralisedV, centralisedC);
+    s = findUniformScale(centralisedV, centralisedC);
 }
 
 // To be called after rotation is applied
@@ -351,6 +379,19 @@ Vec3Df Mesh::findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec
     Vec3Df centroidC = getCentroid(correspondances);
 
     return centroidC - centroid;
+}
+
+float Mesh::findUniformScale(std::vector<Vec3Df> &v, std::vector<Vec3Df> &c){
+    unsigned long long N = v.size();
+    float ys = 0;
+    float ps = 0;
+
+    for(unsigned int i=0; i<N; i++){
+        ys += euclideanNormSquared(c[i]);
+        ps += euclideanNormSquared(v[i]);
+    }
+
+    return sqrt(ys/ps);
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
@@ -493,4 +534,117 @@ void Mesh::printEulerAngles(const Quaternion &q){
     Eigen::Matrix<double, 4, 4> r = matBar * mat;
     std::cout << r;
 
+}
+
+void Mesh::getColour(){
+    int colour = id;
+    float nb = 5;
+
+    float c = static_cast<float>(colour) + 1.f;
+    red = c/nb;
+    green = c/nb + (1.f/3.f);
+    blue = c/nb + (2.f/3.f);
+
+    while(red>1.f) red -= 1.f;
+    while(green>1.f) green -= 1.f;
+    while(blue>1.f) blue -= 1.f;
+}
+
+/************************************************VARIFOLDS*************************************************************/
+double Mesh::kernelGaussian(Vec3Df &x, Vec3Df &y, double sigma){
+    double d = euclideanDistance(x,y);
+    return exp(-d*d/sigma*sigma);
+}
+
+double Mesh::kernelInvariant(Vec3Df &x, Vec3Df &y, double sigma){
+    double ip = innerProduct(x,y);
+    return exp(-2.0*ip*ip/sigma*sigma);
+}
+
+double Mesh::innerProduct(Vec3Df &a, Vec3Df &b){
+    return static_cast<double>(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]);
+}
+
+double Mesh::varifoldMeshInnerProduct(Mesh *m1, Mesh *m2){
+    std::vector<Vec3Df> cf1 = m1->getBarycentres();
+    std::vector<Vec3Df> cf2 = m2->getBarycentres();
+    std::vector<Vec3Df> nf1 = m1->getUnitNormals();
+    std::vector<Vec3Df> nf2 = m2->getUnitNormals();
+    std::vector<Vec3Df> vf1 = m1->getNormals();
+    std::vector<Vec3Df> vf2 = m2->getNormals();
+    unsigned long long nm1 = cf1.size();
+    unsigned long long nm2 = cf2.size();
+
+    double sum = 0;
+    double sigmaP = 0.5;
+    double sigmaS = 0.5;
+
+    for(unsigned long long i=0; i<nm1; i++){
+        for(unsigned long long j=0; j<nm2; j++){
+            double kp = kernelGaussian(cf1[i], cf2[j], sigmaP);
+            double ks = kernelInvariant(nf1[i], nf2[j], sigmaS);
+            sum += kp * ks * static_cast<double>(euclideanNorm(vf1[i])) * static_cast<double>(euclideanNorm(vf2[i]));
+        }
+    }
+
+    return sum;
+}
+
+double Mesh::varifoldDistance(Mesh *m1, Mesh *m2){
+    double m1prod = varifoldMeshInnerProduct(m1, m1);
+    double m2prod = varifoldMeshInnerProduct(m2, m2);
+    double m1m2prod = varifoldMeshInnerProduct(m1, m2);
+
+    return sqrt(m1prod - 2.0 * m1m2prod  + m2prod);
+}
+
+double Mesh::singleMeshInnerSquareProduct(unsigned int index){
+    Vec3Df n = unitNormals[index];
+    Vec3Df v = normals[index];
+
+    double sigmaS = 0.5;
+    double ks = kernelInvariant(n, n, sigmaS);
+    double l2norm = static_cast<double>(euclideanNorm(v));
+    return ks * l2norm * l2norm;
+}
+
+double Mesh::singleMeshInnerProduct(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB){
+    Vec3Df cf1 = (m1->getBarycentres())[indexA];
+    Vec3Df cf2 = (m2->getBarycentres())[indexB];
+    Vec3Df nf1 = (m1->getUnitNormals())[indexA];
+    Vec3Df nf2 = (m2->getUnitNormals())[indexB];
+    Vec3Df vf1 = (m1->getNormals())[indexA];
+    Vec3Df vf2 = (m2->getNormals())[indexB];
+
+    double sigmaP = 0.5;
+    double sigmaS = 0.5;
+
+            double kp = kernelGaussian(cf1, cf2, sigmaP);
+            double ks = kernelInvariant(nf1, nf2, sigmaS);
+            return kp * ks *  static_cast<double>(euclideanNorm(vf1)) * static_cast<double>(euclideanNorm(vf2));
+}
+
+double Mesh::varifoldSingleDistance(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB){
+    double m1prod = m1->singleMeshInnerSquareProduct(indexA);
+    double m2prod = m2->singleMeshInnerSquareProduct(indexB);
+    double m1m2prod = singleMeshInnerProduct(m1, m2, indexA, indexB);
+
+    return m1prod - 2.0 * m1m2prod + m2prod;
+}
+
+void Mesh::findClosestPointsVarifold(Mesh *m2, std::vector<Vec3Df> &baseVerticies, std::vector<Vec3Df> &closestPoints){
+    closestPoints.clear();
+
+        for(unsigned int i=0; i<vertices.size(); i++){
+            double minDist = DBL_MAX;
+            int minIndex = -1;
+            for(unsigned int j=0; j<baseVerticies.size(); j++){
+                double d = varifoldSingleDistance(this, m2, i, j);
+                if(d<minDist){
+                    minDist = d;
+                    minIndex = static_cast<int>(j);
+                }
+            }
+            closestPoints.push_back(baseVerticies[static_cast<unsigned int>(minIndex)]);
+        }
 }

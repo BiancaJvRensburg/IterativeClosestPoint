@@ -27,9 +27,14 @@ public:
     std::vector<Triangle> &getTriangles(){return triangles;}
     const std::vector<Triangle> &getTriangles()const {return triangles;}
 
+    // Varifold
+    std::vector<Vec3Df>& getBarycentres(){ calculateBarycentres(); return barycentres; }
+    std::vector<Vec3Df>& getNormals(){ return normals; }
+    std::vector<Vec3Df>& getUnitNormals(){ return unitNormals; }
+
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
 
-    void init();
+    void init(int id);
     void draw();
 
     void clear();
@@ -50,6 +55,10 @@ public:
     void rotateToBase(Mesh* base);
     void zero();
 
+    // Varifold
+    double singleMeshInnerSquareProduct(unsigned int indexA);
+    double singleMeshInnerProduct(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB);
+
 Q_SIGNALS:
     void updateViewer();
 
@@ -65,6 +74,7 @@ protected:
     void rotate(Quaternion r);
     void translate(Vec t);                  // t defined in the world
     void translateFromLocal(Vec t);         // t defined inside the frame
+    void uniformScale(float &s);
 
     void scaleToBase(Mesh* base);
     void matchDepthAxis(Mesh* base);
@@ -81,29 +91,42 @@ protected:
     void shiftQuaternion(Quaternion &q);
 
 
-    void findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r);
+    void findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r, float &s);
     Vec3Df getCentroid(std::vector<Vec3Df>& v);
     std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
     float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
     Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
     void printEulerAngles(const Quaternion &q);
+    float findUniformScale(std::vector<Vec3Df>& v, std::vector<Vec3Df>& c);
     Vec3Df findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df>& correspondences);
 
-    void applyAlignment(Quaternion& r, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &correspondances);
+    void applyAlignment(Quaternion& r, float &s, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &correspondances);
 
     float getError(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
     float euclideanNorm(Vec3Df a);
+    float euclideanNormSquared(Vec3Df a);
 
     void computeTriangleNormals();
-    Vec3Df computeTriangleNormal(unsigned int t);
+    void computeTriangleNormal(unsigned int t);
     void computeVerticesNormals();
+    void calculateBarycentres();
     void glTriangle(unsigned int i);
-    void glTriangleSmooth(unsigned int i);
-    void glTriangleFibInMand(unsigned int i);
+    void getColour();
 
-    std::vector <Vec3Df> vertices;      // starting verticies
-    std::vector <Triangle> triangles;       // starting triangles
+    //Varifold
+    double kernelGaussian(Vec3Df &x, Vec3Df &y, double sigma);
+    double kernelInvariant(Vec3Df &x, Vec3Df &y, double sigma);
+    double innerProduct(Vec3Df &x, Vec3Df &y);      // probably already exists
+    double varifoldMeshInnerProduct(Mesh *m1, Mesh *m2);
+    double varifoldDistance(Mesh *m1, Mesh *m2);
+    double varifoldSingleDistance(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB);
+    void findClosestPointsVarifold(Mesh *m2, std::vector<Vec3Df>& baseVertices, std::vector<Vec3Df>& closestPoints);
+
+    std::vector <Vec3Df> vertices;
+    std::vector <Triangle> triangles;
+    std::vector <Vec3Df> barycentres;
     std::vector<Vec3Df> normals;
+    std::vector<Vec3Df> unitNormals;
     std::vector<Vec3Df> verticesNormals;
 
     Vec3Df BBMin;
@@ -112,6 +135,8 @@ protected:
     float radius;
 
     float distError;
+    int id;
+    float red, green, blue;
 
     int normalDirection;
 

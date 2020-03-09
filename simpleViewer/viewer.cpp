@@ -15,10 +15,7 @@ void Viewer::draw() {
     glPushMatrix();
     glMultMatrixd(manipulatedFrame()->matrix());
 
-    //QGLViewer::drawAxis(15.0);
-
-    glColor3f(1.,1.,1.);
-    for(unsigned int i=0; i<meshes.size(); i++) meshes[i]->draw();
+    for(unsigned int i=0; i<static_cast<unsigned int>(nbToDraw); i++) meshes[i]->draw();
     glPopMatrix();
 }
 
@@ -42,8 +39,9 @@ void Viewer::openOFF(QString filename) {
 
     FileIO::openOFF(filename.toStdString(), vertices, triangles);
 
-    meshes[lastIndex]->init();
+    meshes[lastIndex]->init(static_cast<int>(lastIndex));
     meshes[lastIndex]->setReferenceFrame(viewerFrame);
+    nbToDraw++;
 
     connect(meshes[lastIndex], &Mesh::updateViewer, this, &Viewer::toUpdate);
 
@@ -96,4 +94,14 @@ void Viewer::rotateZ(){
 
 void Viewer::autoRotate(){
     meshes[meshes.size()-1]->rotateToBase(meshes[baseMesh]);
+}
+
+void Viewer::increaseNbToDraw(){
+    if(nbToDraw<static_cast<int>(meshes.size())) nbToDraw++;
+    update();
+}
+
+void Viewer::decreaseNbToDraw(){
+    if(nbToDraw>0) nbToDraw--;
+    update();
 }

@@ -23,6 +23,8 @@ public Q_SLOTS:
     void rotateZ();
     void autoRotate();
     void toUpdate();
+    void increaseNbToDraw();
+    void decreaseNbToDraw();
 
 protected:
     virtual void draw();
@@ -33,4 +35,5 @@ protected:
     std::vector<Mesh*> meshes;
     ManipulatedFrame* viewerFrame;
     unsigned int baseMesh = 0;
+    int nbToDraw = 0;
 };

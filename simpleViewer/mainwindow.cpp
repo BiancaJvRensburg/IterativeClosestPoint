@@ -64,6 +64,12 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
+    QAction *incrMeshAction = new QAction("Add mesh drawn", this);
+    connect(incrMeshAction, &QAction::triggered, view, &Viewer::increaseNbToDraw);
+
+    QAction *decMeshAction = new QAction("Subtract mesh drawn", this);
+    connect(decMeshAction, &QAction::triggered, view, &Viewer::decreaseNbToDraw);
+
    /* QAction *autoRAction = new QAction("Auto align", this);
     connect(autoRAction, &QAction::triggered, view, &Viewer::autoRotate);*/
 
@@ -79,7 +85,8 @@ void MainWindow::initFileActions(){
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
-    //fileActionGroup->addAction(autoRAction);
+    fileActionGroup->addAction(incrMeshAction);
+    fileActionGroup->addAction(decMeshAction);
     fileActionGroup->addAction(rxAction);
     fileActionGroup->addAction(ryAction);
     fileActionGroup->addAction(rzAction);
