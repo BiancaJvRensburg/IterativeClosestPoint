@@ -39,8 +39,8 @@ void Viewer::openOFF(QString filename) {
 
     FileIO::openOFF(filename.toStdString(), vertices, triangles);
 
-    meshes[lastIndex]->init(static_cast<int>(lastIndex));
-    meshes[lastIndex]->setReferenceFrame(viewerFrame);
+    meshes[lastIndex]->init(static_cast<int>(lastIndex), viewerFrame);
+    if(lastIndex!=baseMesh) meshes[lastIndex]->alignWithBase(meshes[baseMesh]);
     nbToDraw++;
 
     connect(meshes[lastIndex], &Mesh::updateViewer, this, &Viewer::toUpdate);

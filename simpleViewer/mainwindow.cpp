@@ -70,9 +70,6 @@ void MainWindow::initFileActions(){
     QAction *decMeshAction = new QAction("Subtract mesh drawn", this);
     connect(decMeshAction, &QAction::triggered, view, &Viewer::decreaseNbToDraw);
 
-   /* QAction *autoRAction = new QAction("Auto align", this);
-    connect(autoRAction, &QAction::triggered, view, &Viewer::autoRotate);*/
-
     QAction *rxAction = new QAction("Rotate X 90°", this);
     connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
 

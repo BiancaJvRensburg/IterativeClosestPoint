@@ -4,18 +4,19 @@
 #include <Eigenvalues>
 #include <nanoflann.hpp>
 
-void Mesh::init(int id){
+void Mesh::init(int id, const Frame *ref){
     computeBB();
 
     frame = Frame();
-    Vec3Df centroid = getCentroid(vertices);
-    frame.setPosition(static_cast<double>(centroid[0]), static_cast<double>(centroid[1]), static_cast<double>(centroid[2]));
+    frame.setPosition(Vec(0,0,0));
+    setReferenceFrame(ref);
 
     distError = FLT_MAX;
     this->id = id;
     getColour();
 
     zero();
+
     update();
 }
 
@@ -122,6 +123,21 @@ void Mesh::draw()
 
     for(unsigned int i = 0 ; i < triangles.size(); i++) glTriangle(i);
 
+    /*glColor3f(1.0, 0, 0);
+       glLineWidth(1.0);
+       for(unsigned int i=0; i<cor.size(); i++){
+           glBegin(GL_LINE_STRIP);
+               glVertex3f(vc[i][0], vc[i][1], vc[i][2]);
+               glVertex3f(cor[i][0], cor[i][1], cor[i][2]);
+           glEnd();
+       }*/
+
+   /* glColor3f(1.0, 0, 0);
+   glBegin(GL_POINTS);
+       glVertex3f(centroidVc[0],centroidVc[1],centroidVc[2]);
+       glVertex3f(centroidCor[0], centroidCor[1], centroidCor[2]);
+   glEnd();*/
+
     glColor3f(1.f, 1.f, 1.f);
 
     glEnd();
@@ -133,15 +149,8 @@ void Mesh::draw()
 }
 
 void Mesh::zero(){
-    Vec BBCentreWorld = frame.localInverseCoordinatesOf(Vec(static_cast<double>(BBCentre[0]),static_cast<double>(BBCentre[1]),static_cast<double>(BBCentre[2])));
-    Vec3Df t = Vec3Df(static_cast<float>(BBCentreWorld.x), static_cast<float>(BBCentreWorld.y), static_cast<float>(BBCentreWorld.z));
-    for(unsigned int i=0; i<vertices.size(); i++){
-            vertices[i] -= t;
-        }
-
-    BBCentre -= t;
-    BBMin -= t;
-    BBMax -= t;
+    for(unsigned int i=0; i<vertices.size(); i++) vertices[i] -= BBCentre;
+    computeBB();
 }
 
 void Mesh::translate(Vec t){
@@ -211,7 +220,7 @@ void Mesh::matchDepthAxis(Mesh* base){
 }
 
 void Mesh::icp(Mesh* base){
-    int maxIterations = 200;
+    int maxIterations = 50;
     //float errorThreshold = 0.1f;
     int it = 0;
     float deltaError = 1;
@@ -235,11 +244,16 @@ void Mesh::icpSingleIteration(Mesh *base){
     Q_EMIT updateViewer();
 }
 
-void Mesh::icpStep(Mesh* base){
-    std::vector<Vec3Df> basePoints = baseToFrame(base);     // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+void Mesh::icpStep(Mesh* base){    // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+    std::vector<Vec3Df> basePoints, baseNormals, baseUnitNormals, baseBarycentres;
     std::vector<Vec3Df> correspondences;
 
-    findClosestPointsVarifold(base, basePoints, correspondences);
+    /*baseToFrameVarifold(base, basePoints, baseBarycentres, baseNormals, baseUnitNormals);
+    findClosestPointsVarifold(basePoints, correspondences, baseBarycentres, baseNormals, baseUnitNormals);*/
+
+    basePoints = baseToFrame(base);
+    findClosestPoints(basePoints, correspondences);
+
     Quaternion r;
     float s;
     findAlignment(correspondences, r, s);
@@ -249,13 +263,16 @@ void Mesh::icpStep(Mesh* base){
     backToWorld(correspondences);
     applyAlignment(r, s, worldVertices, correspondences);
 
+    /*vc = worldVertices;
+    cor = correspondences;*/
+
     distError = getError(worldVertices, correspondences);
     std::cout << "Error : " << distError << std::endl;
 }
 
 void Mesh::applyAlignment(Quaternion &r, float &s, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &worldCorrespondances){
     frame.rotate(r);
-    uniformScale(s);
+    //uniformScale(s);
     translate(Vec(findTranslation(worldVertices, worldCorrespondances)));
 }
 
@@ -291,6 +308,30 @@ std::vector<Vec3Df> Mesh::baseToFrame(Mesh *base){
     return v;
 }
 
+void Mesh::baseToFrameVarifold(Mesh *base, std::vector<Vec3Df> &v, std::vector<Vec3Df>& barycentresB,  std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB){
+    v.clear();
+    barycentresB.clear();
+    normalsB.clear();
+    unitNormalsB.clear();
+
+    v = base->getVertices();
+    barycentresB = base->getBarycentres();
+    normalsB = base->getNormals();
+    unitNormalsB = base->getUnitNormals();
+
+    unsigned long long N = v.size();
+
+    for(unsigned int i=0; i<N; i++) v[i] = worldToFrame(Vec(base->frameToWorld(v[i])));
+
+    N = barycentresB.size();
+
+    for(unsigned int i=0; i<N; i++){
+        barycentresB[i] = worldToFrame(Vec(base->frameToWorld(barycentresB[i])));
+        normalsB[i] = worldToFrameVector(Vec(base->frameToWorldVector(normalsB[i])));
+        unitNormalsB[i] = worldToFrameVector(Vec(base->frameToWorldVector(unitNormalsB[i])));
+    }
+}
+
 Vec Mesh::frameToWorld(unsigned int index){
     Vec3Df v = vertices[index];
     return frame.localInverseCoordinatesOf(Vec(v));
@@ -303,6 +344,16 @@ Vec3Df Mesh::frameToWorld(Vec3Df v){
 
 Vec3Df Mesh::worldToFrame(Vec v){
    v = frame.localCoordinatesOf(v);
+   return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
+}
+
+Vec3Df Mesh::frameToWorldVector(Vec3Df v){
+    Vec c = frame.localInverseTransformOf(Vec(v));
+    return Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
+}
+
+Vec3Df Mesh::worldToFrameVector(Vec v){
+   v = frame.localTransformOf(v);
    return Vec3Df(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
 }
 
@@ -377,6 +428,13 @@ void Mesh::findAlignment(std::vector<Vec3Df>& correspondences, Quaternion &r, fl
 Vec3Df Mesh::findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &correspondances){
     Vec3Df centroid = getCentroid(worldVertices);
     Vec3Df centroidC = getCentroid(correspondances);
+    centroidStable = centroid;
+
+    /*centroidVc = centroid;
+    centroidCor = centroidC;
+
+    std::cout << "Centroid v : " << centroidVc[0] << " , " << centroidVc[1] << " , " << centroidVc[2] << std::endl;
+    std::cout << "Centroid c : " << centroidCor[0] << " , " << centroidCor[1] << " , " << centroidCor[2] << std::endl;*/
 
     return centroidC - centroid;
 }
@@ -395,7 +453,7 @@ float Mesh::findUniformScale(std::vector<Vec3Df> &v, std::vector<Vec3Df> &c){
 }
 
 Vec3Df Mesh::getCentroid(std::vector<Vec3Df>& v){
-    Vec3Df centroid;
+    Vec3Df centroid(0.,0.,0.);
     unsigned long long N = v.size();
 
     for(unsigned int i=0; i<N; i++){
@@ -598,53 +656,51 @@ double Mesh::varifoldDistance(Mesh *m1, Mesh *m2){
     return sqrt(m1prod - 2.0 * m1m2prod  + m2prod);
 }
 
-double Mesh::singleMeshInnerSquareProduct(unsigned int index){
-    Vec3Df n = unitNormals[index];
-    Vec3Df v = normals[index];
-
+double Mesh::singleMeshInnerSquareProduct(Vec3Df &normalB, Vec3Df &unitNormal){
     double sigmaS = 0.5;
-    double ks = kernelInvariant(n, n, sigmaS);
-    double l2norm = static_cast<double>(euclideanNorm(v));
+    double ks = kernelInvariant(unitNormal, unitNormal, sigmaS);
+    double l2norm = static_cast<double>(euclideanNorm(normalB));
     return ks * l2norm * l2norm;
 }
 
-double Mesh::singleMeshInnerProduct(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB){
-    Vec3Df cf1 = (m1->getBarycentres())[indexA];
-    Vec3Df cf2 = (m2->getBarycentres())[indexB];
-    Vec3Df nf1 = (m1->getUnitNormals())[indexA];
-    Vec3Df nf2 = (m2->getUnitNormals())[indexB];
-    Vec3Df vf1 = (m1->getNormals())[indexA];
-    Vec3Df vf2 = (m2->getNormals())[indexB];
+double Mesh::singleMeshInnerProduct(std::vector<Vec3Df> &barycentresB, std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB, unsigned int indexA, unsigned int indexB){
+    Vec3Df cf1 = barycentres[indexA];
+    Vec3Df cf2 = barycentresB[indexB];
+    Vec3Df nf1 = unitNormals[indexA];
+    Vec3Df nf2 = unitNormalsB[indexB];
+    Vec3Df vf1 = normals[indexA];
+    Vec3Df vf2 = normalsB[indexB];
 
     double sigmaP = 0.5;
     double sigmaS = 0.5;
 
-            double kp = kernelGaussian(cf1, cf2, sigmaP);
-            double ks = kernelInvariant(nf1, nf2, sigmaS);
-            return kp * ks *  static_cast<double>(euclideanNorm(vf1)) * static_cast<double>(euclideanNorm(vf2));
+    double kp = kernelGaussian(cf1, cf2, sigmaP);
+    double ks = kernelInvariant(nf1, nf2, sigmaS);
+    return kp * ks *  static_cast<double>(euclideanNorm(vf1)) * static_cast<double>(euclideanNorm(vf2));
 }
 
-double Mesh::varifoldSingleDistance(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB){
-    double m1prod = m1->singleMeshInnerSquareProduct(indexA);
-    double m2prod = m2->singleMeshInnerSquareProduct(indexB);
-    double m1m2prod = singleMeshInnerProduct(m1, m2, indexA, indexB);
+double Mesh::varifoldSingleDistance(unsigned int indexA, unsigned int indexB, std::vector<Vec3Df> &barycentresB, std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB){
+    double m1prod = singleMeshInnerSquareProduct(normals[indexA], unitNormals[indexA]);
+    double m2prod = singleMeshInnerSquareProduct(normalsB[indexB], unitNormalsB[indexB]);
+    double m1m2prod = singleMeshInnerProduct(barycentresB, normalsB, unitNormalsB, indexA, indexB);
 
     return m1prod - 2.0 * m1m2prod + m2prod;
 }
 
-void Mesh::findClosestPointsVarifold(Mesh *m2, std::vector<Vec3Df> &baseVerticies, std::vector<Vec3Df> &closestPoints){
+void Mesh::findClosestPointsVarifold(std::vector<Vec3Df> &baseVertices, std::vector<Vec3Df> &closestPoints, std::vector<Vec3Df> &barycentresB, std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB){
     closestPoints.clear();
+    calculateBarycentres();
 
         for(unsigned int i=0; i<vertices.size(); i++){
             double minDist = DBL_MAX;
             int minIndex = -1;
-            for(unsigned int j=0; j<baseVerticies.size(); j++){
-                double d = varifoldSingleDistance(this, m2, i, j);
+            for(unsigned int j=0; j<baseVertices.size(); j++){
+                double d = abs(varifoldSingleDistance(i, j, barycentresB, normalsB, unitNormalsB));
                 if(d<minDist){
                     minDist = d;
                     minIndex = static_cast<int>(j);
                 }
             }
-            closestPoints.push_back(baseVerticies[static_cast<unsigned int>(minIndex)]);
+            closestPoints.push_back(baseVertices[static_cast<unsigned int>(minIndex)]);
         }
 }

@@ -21,6 +21,8 @@ public:
     }
     ~Mesh(){}
 
+    void alignWithBase(Mesh* base);
+
     std::vector<Vec3Df> &getVertices(){return vertices;}
     const std::vector<Vec3Df> &getVertices()const {return vertices;}
 
@@ -34,7 +36,7 @@ public:
 
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
 
-    void init(int id);
+    void init(int id, const Frame *ref);
     void draw();
 
     void clear();
@@ -56,15 +58,14 @@ public:
     void zero();
 
     // Varifold
-    double singleMeshInnerSquareProduct(unsigned int indexA);
-    double singleMeshInnerProduct(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB);
+    double singleMeshInnerSquareProduct(Vec3Df &normalB, Vec3Df& unitNormal);
+    double singleMeshInnerProduct(std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB, unsigned int indexA, unsigned int indexB);
 
 Q_SIGNALS:
     void updateViewer();
 
 protected:
     void computeBB();
-    void alignWithBase(Mesh* base);
 
     void update();
     void recomputeNormals();
@@ -83,6 +84,8 @@ protected:
     Vec frameToWorld(unsigned int index);       // convert the vertice from local to world coordinates
     Vec3Df frameToWorld(Vec3Df v);
     Vec3Df worldToFrame(Vec v);                 // convert the vertice from world to local coordinates
+    Vec3Df frameToWorldVector(Vec3Df v);
+    Vec3Df worldToFrameVector(Vec v);
     void backToWorld(std::vector<Vec3Df> &v);   // convert the verticies from this frame back to the world coordinates
 
     void findClosestPoints(std::vector<Vec3Df>& basePoints, std::vector<Vec3Df>& closestPoints);
@@ -119,8 +122,9 @@ protected:
     double innerProduct(Vec3Df &x, Vec3Df &y);      // probably already exists
     double varifoldMeshInnerProduct(Mesh *m1, Mesh *m2);
     double varifoldDistance(Mesh *m1, Mesh *m2);
-    double varifoldSingleDistance(Mesh *m1, Mesh *m2, unsigned int indexA, unsigned int indexB);
-    void findClosestPointsVarifold(Mesh *m2, std::vector<Vec3Df>& baseVertices, std::vector<Vec3Df>& closestPoints);
+    double varifoldSingleDistance(unsigned int indexA, unsigned int indexB, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
+    void findClosestPointsVarifold(std::vector<Vec3Df>& baseVertices, std::vector<Vec3Df>& closestPoints, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
+    void baseToFrameVarifold(Mesh* base, std::vector<Vec3Df>& v, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
 
     std::vector <Vec3Df> vertices;
     std::vector <Triangle> triangles;
@@ -128,6 +132,11 @@ protected:
     std::vector<Vec3Df> normals;
     std::vector<Vec3Df> unitNormals;
     std::vector<Vec3Df> verticesNormals;
+
+    std::vector<Vec3Df> cor;
+    std::vector<Vec3Df> vc;
+    Vec3Df centroidCor, centroidVc;
+    Vec3Df centroidStable;
 
     Vec3Df BBMin;
     Vec3Df BBMax;
