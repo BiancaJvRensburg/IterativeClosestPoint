@@ -114,8 +114,8 @@ void Mesh::draw()
     glPushMatrix();
     glMultMatrixd(frame.matrix());
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_DEPTH);
+    /*glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH);*/
 
     glBegin (GL_TRIANGLES);
 
@@ -123,27 +123,12 @@ void Mesh::draw()
 
     for(unsigned int i = 0 ; i < triangles.size(); i++) glTriangle(i);
 
-    /*glColor3f(1.0, 0, 0);
-       glLineWidth(1.0);
-       for(unsigned int i=0; i<cor.size(); i++){
-           glBegin(GL_LINE_STRIP);
-               glVertex3f(vc[i][0], vc[i][1], vc[i][2]);
-               glVertex3f(cor[i][0], cor[i][1], cor[i][2]);
-           glEnd();
-       }*/
-
-   /* glColor3f(1.0, 0, 0);
-   glBegin(GL_POINTS);
-       glVertex3f(centroidVc[0],centroidVc[1],centroidVc[2]);
-       glVertex3f(centroidCor[0], centroidCor[1], centroidCor[2]);
-   glEnd();*/
-
     glColor3f(1.f, 1.f, 1.f);
 
     glEnd();
 
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_DEPTH);
+    /*glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH);*/
 
     glPopMatrix();
 }
@@ -262,9 +247,6 @@ void Mesh::icpStep(Mesh* base){    // get the base in terms of our frame (this c
     backToWorld(worldVertices);
     backToWorld(correspondences);
     applyAlignment(r, s, worldVertices, correspondences);
-
-    /*vc = worldVertices;
-    cor = correspondences;*/
 
     distError = getError(worldVertices, correspondences);
     std::cout << "Error : " << distError << std::endl;

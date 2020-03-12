@@ -15,6 +15,9 @@ void Viewer::draw() {
     glPushMatrix();
     glMultMatrixd(manipulatedFrame()->matrix());
 
+    curve->draw();
+    curve->drawControl();
+
     for(unsigned int i=0; i<static_cast<unsigned int>(nbToDraw); i++) meshes[i]->draw();
     glPopMatrix();
 }
@@ -28,7 +31,10 @@ void Viewer::init() {
   setAxisIsDrawn(false);
 
   glEnable(GL_LIGHTING);
-  glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+  //glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+  initCurve();
 }
 
 void Viewer::openOFF(QString filename) {
@@ -56,6 +62,30 @@ void Viewer::openOFF(QString filename) {
     std::cout << "File loaded " << std::endl;
 
     update();
+}
+
+void Viewer::initCurve(){
+    std::vector<Vec> control;
+     const long nbCP = 9;
+
+    control.push_back(Vec(-5, 5.31, -4.34849));
+
+    control.push_back(Vec(-4.41,1.9687,-2.7316));
+    control.push_back(Vec(-3.84341,-0.8484,-1.6));
+    control.push_back(Vec(-2.53101,-2.57117,1.67488));
+
+    control.push_back(Vec(-0.125591 , -2.97056 , 2.95159));
+
+    control.push_back(Vec(2.53101,-2.57117,1.67488));
+    control.push_back(Vec(3.84341,-0.8484,-1.6));
+    control.push_back(Vec(4.41,1.9687,-2.7316));
+
+    control.push_back(Vec(5, 5.31, -4.34849));
+
+    curve = new Curve(nbCP, control);
+
+    unsigned int nbU = 100;
+    curve->generateCatmull(nbU);
 }
 
 void Viewer::toUpdate(){
