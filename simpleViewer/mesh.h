@@ -21,7 +21,7 @@ public:
     }
     ~Mesh(){}
 
-    void alignWithBase(Mesh* base);
+    void alignWithBase(Mesh &base);
 
     std::vector<Vec3Df> &getVertices(){return vertices;}
     const std::vector<Vec3Df> &getVertices()const {return vertices;}
@@ -36,7 +36,7 @@ public:
 
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
 
-    void init(int id, const Frame *ref);
+    void init(const Frame *ref);
     void draw();
 
     void clear();
@@ -51,10 +51,10 @@ public:
     // ICP
     Vec getDepthAxis(bool isLocal);
 
-    void icp(Mesh *base);
-    void icpSingleIteration(Mesh *base);
+    void icp(Mesh &base);
+    void icpSingleIteration(Mesh &base);
     void rotateAroundAxis(Vec axis, double alpha);
-    void rotateToBase(Mesh* base);
+    void rotateToBase(Mesh& base);
     void zero();
 
     // Varifold
@@ -70,17 +70,17 @@ protected:
     void update();
     void recomputeNormals();
 
-    void icpStep(Mesh *base);
+    void icpStep(Mesh &base);
 
     void rotate(Quaternion r);
     void translate(Vec t);                  // t defined in the world
     void translateFromLocal(Vec t);         // t defined inside the frame
     void uniformScale(float &s);
 
-    void scaleToBase(Mesh* base);
-    void matchDepthAxis(Mesh* base);
+    void scaleToBase(Mesh& base);
+    void matchDepthAxis(Mesh& base);
 
-    std::vector<Vec3Df> baseToFrame(Mesh* base);
+    std::vector<Vec3Df> baseToFrame(Mesh& base);
     Vec frameToWorld(unsigned int index);       // convert the vertice from local to world coordinates
     Vec3Df frameToWorld(Vec3Df v);
     Vec3Df worldToFrame(Vec v);                 // convert the vertice from world to local coordinates
@@ -114,17 +114,16 @@ protected:
     void computeVerticesNormals();
     void calculateBarycentres();
     void glTriangle(unsigned int i);
-    void getColour();
 
     //Varifold
     double kernelGaussian(Vec3Df &x, Vec3Df &y, double sigma);
     double kernelInvariant(Vec3Df &x, Vec3Df &y, double sigma);
     double innerProduct(Vec3Df &x, Vec3Df &y);      // probably already exists
-    double varifoldMeshInnerProduct(Mesh *m1, Mesh *m2);
-    double varifoldDistance(Mesh *m1, Mesh *m2);
+    double varifoldMeshInnerProduct(Mesh &m1, Mesh &m2);
+    double varifoldDistance(Mesh &m1, Mesh &m2);
     double varifoldSingleDistance(unsigned int indexA, unsigned int indexB, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
     void findClosestPointsVarifold(std::vector<Vec3Df>& baseVertices, std::vector<Vec3Df>& closestPoints, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
-    void baseToFrameVarifold(Mesh* base, std::vector<Vec3Df>& v, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
+    void baseToFrameVarifold(Mesh& base, std::vector<Vec3Df>& v, std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB);
 
     std::vector <Vec3Df> vertices;
     std::vector <Triangle> triangles;
@@ -144,8 +143,6 @@ protected:
     float radius;
 
     float distError;
-    int id;
-    float red, green, blue;
 
     int normalDirection;
 

@@ -14,7 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
     this->resize(929, 891);
 
     // The qglviewer
-    //QString skullFilename = "C:\\Users\\Medmax\\Documents\\Project\\Mand_B.off";
     StandardCamera *sc = new StandardCamera();
     view = new Viewer(this, sc);
 
@@ -45,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
     initToolBars();
 
     this->setWindowTitle("Iterative Closest Point");
+
+   // openBaseMesh();
 }
 
 MainWindow::~MainWindow()
@@ -64,12 +65,6 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
-    QAction *incrMeshAction = new QAction("Add mesh drawn", this);
-    connect(incrMeshAction, &QAction::triggered, view, &Viewer::increaseNbToDraw);
-
-    QAction *decMeshAction = new QAction("Subtract mesh drawn", this);
-    connect(decMeshAction, &QAction::triggered, view, &Viewer::decreaseNbToDraw);
-
     QAction *rxAction = new QAction("Rotate X 90°", this);
     connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
 
@@ -82,8 +77,6 @@ void MainWindow::initFileActions(){
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
-    fileActionGroup->addAction(incrMeshAction);
-    fileActionGroup->addAction(decMeshAction);
     fileActionGroup->addAction(rxAction);
     fileActionGroup->addAction(ryAction);
     fileActionGroup->addAction(rzAction);
@@ -103,6 +96,8 @@ void MainWindow::initToolBars () {
 }
 
 void MainWindow::openMesh(){
+    openBaseMesh();
+
     QString openFileNameLabel, selectedFilter;
 
     QString fileFilter = "OFF (*.off)";
@@ -111,6 +106,11 @@ void MainWindow::openMesh(){
 
     if(fileName.isEmpty()) return;
 
-    view->openOFF(fileName);
+    view->openOFF(fileName, view->getMesh(false), false);
+}
+
+void MainWindow::openBaseMesh(){
+    QString filename = "C:\\Users\\Medmax\\Documents\\Bianca\\Meshes\\Mandible.off";
+    view->openOFF(filename, view->getMesh(true), true);
 }
 

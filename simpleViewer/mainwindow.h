@@ -24,6 +24,10 @@ private:
 
 private Q_SLOTS:
     void openMesh();
+
+private:
+    void openBaseMesh();
+    bool isBase;
 };
 
 #endif // MAINWINDOW_H

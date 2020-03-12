@@ -4,7 +4,7 @@
 #include <Eigenvalues>
 #include <nanoflann.hpp>
 
-void Mesh::init(int id, const Frame *ref){
+void Mesh::init(const Frame *ref){
     computeBB();
 
     frame = Frame();
@@ -12,8 +12,6 @@ void Mesh::init(int id, const Frame *ref){
     setReferenceFrame(ref);
 
     distError = FLT_MAX;
-    this->id = id;
-    getColour();
 
     zero();
 
@@ -119,8 +117,6 @@ void Mesh::draw()
 
     glBegin (GL_TRIANGLES);
 
-    glColor3f(red, green, blue);
-
     for(unsigned int i = 0 ; i < triangles.size(); i++) glTriangle(i);
 
     glColor3f(1.f, 1.f, 1.f);
@@ -153,13 +149,13 @@ void Mesh::rotate(Quaternion r){
     frame.rotateAroundPoint(r, rotationPoint);
 }
 
-void Mesh::alignWithBase(Mesh *base){
+void Mesh::alignWithBase(Mesh &base){
     scaleToBase(base);
     //matchDepthAxis(base);
 }
 
-void Mesh::scaleToBase(Mesh *base){
-    float radiusBase = base->getBBRadius();
+void Mesh::scaleToBase(Mesh &base){
+    float radiusBase = base.getBBRadius();
     float ratio = radiusBase / radius;
 
     uniformScale(ratio);
@@ -173,7 +169,7 @@ void Mesh::uniformScale(float &s){
     radius *= s;
 }
 
-void Mesh::rotateToBase(Mesh *base){
+void Mesh::rotateToBase(Mesh &base){
     matchDepthAxis(base);
 }
 
@@ -196,15 +192,15 @@ Vec Mesh::getDepthAxis(bool isLocal){
     }
 }
 
-void Mesh::matchDepthAxis(Mesh* base){
+void Mesh::matchDepthAxis(Mesh &base){
     Vec depth = getDepthAxis(true);
-    Vec baseDepth = base->getDepthAxis(false);
+    Vec baseDepth = base.getDepthAxis(false);
 
     Quaternion r = Quaternion(depth, baseDepth);
     rotate(r);
 }
 
-void Mesh::icp(Mesh* base){
+void Mesh::icp(Mesh& base){
     int maxIterations = 50;
     //float errorThreshold = 0.1f;
     int it = 0;
@@ -223,13 +219,13 @@ void Mesh::icp(Mesh* base){
     distError = FLT_MAX;
 }
 
-void Mesh::icpSingleIteration(Mesh *base){
+void Mesh::icpSingleIteration(Mesh &base){
     icpStep(base);
     //std::cout << "Varifold distance : " << varifoldDistance(this, base) << std::endl;
     Q_EMIT updateViewer();
 }
 
-void Mesh::icpStep(Mesh* base){    // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
+void Mesh::icpStep(Mesh& base){    // get the base in terms of our frame (this changes everytime we apply a rotation / translation)
     std::vector<Vec3Df> basePoints, baseNormals, baseUnitNormals, baseBarycentres;
     std::vector<Vec3Df> correspondences;
 
@@ -278,39 +274,39 @@ float Mesh::euclideanNormSquared(Vec3Df a){
     return a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
 }
 
-std::vector<Vec3Df> Mesh::baseToFrame(Mesh *base){
-    unsigned long long N = base->getVertices().size();
+std::vector<Vec3Df> Mesh::baseToFrame(Mesh &base){
+    unsigned long long N = base.getVertices().size();
     std::vector<Vec3Df> v;
 
     for(unsigned int i=0; i<N; i++){
-        Vec vWorld = base->frameToWorld(i);
+        Vec vWorld = base.frameToWorld(i);
         Vec3Df inFrame = worldToFrame(vWorld);
         v.push_back(inFrame);
     }
     return v;
 }
 
-void Mesh::baseToFrameVarifold(Mesh *base, std::vector<Vec3Df> &v, std::vector<Vec3Df>& barycentresB,  std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB){
+void Mesh::baseToFrameVarifold(Mesh &base, std::vector<Vec3Df> &v, std::vector<Vec3Df>& barycentresB,  std::vector<Vec3Df> &normalsB, std::vector<Vec3Df> &unitNormalsB){
     v.clear();
     barycentresB.clear();
     normalsB.clear();
     unitNormalsB.clear();
 
-    v = base->getVertices();
-    barycentresB = base->getBarycentres();
-    normalsB = base->getNormals();
-    unitNormalsB = base->getUnitNormals();
+    v = base.getVertices();
+    barycentresB = base.getBarycentres();
+    normalsB = base.getNormals();
+    unitNormalsB = base.getUnitNormals();
 
     unsigned long long N = v.size();
 
-    for(unsigned int i=0; i<N; i++) v[i] = worldToFrame(Vec(base->frameToWorld(v[i])));
+    for(unsigned int i=0; i<N; i++) v[i] = worldToFrame(Vec(base.frameToWorld(v[i])));
 
     N = barycentresB.size();
 
     for(unsigned int i=0; i<N; i++){
-        barycentresB[i] = worldToFrame(Vec(base->frameToWorld(barycentresB[i])));
-        normalsB[i] = worldToFrameVector(Vec(base->frameToWorldVector(normalsB[i])));
-        unitNormalsB[i] = worldToFrameVector(Vec(base->frameToWorldVector(unitNormalsB[i])));
+        barycentresB[i] = worldToFrame(Vec(base.frameToWorld(barycentresB[i])));
+        normalsB[i] = worldToFrameVector(Vec(base.frameToWorldVector(normalsB[i])));
+        unitNormalsB[i] = worldToFrameVector(Vec(base.frameToWorldVector(unitNormalsB[i])));
     }
 }
 
@@ -576,20 +572,6 @@ void Mesh::printEulerAngles(const Quaternion &q){
 
 }
 
-void Mesh::getColour(){
-    int colour = id;
-    float nb = 5;
-
-    float c = static_cast<float>(colour) + 1.f;
-    red = c/nb;
-    green = c/nb + (1.f/3.f);
-    blue = c/nb + (2.f/3.f);
-
-    while(red>1.f) red -= 1.f;
-    while(green>1.f) green -= 1.f;
-    while(blue>1.f) blue -= 1.f;
-}
-
 /************************************************VARIFOLDS*************************************************************/
 double Mesh::kernelGaussian(Vec3Df &x, Vec3Df &y, double sigma){
     double d = euclideanDistance(x,y);
@@ -605,13 +587,13 @@ double Mesh::innerProduct(Vec3Df &a, Vec3Df &b){
     return static_cast<double>(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]);
 }
 
-double Mesh::varifoldMeshInnerProduct(Mesh *m1, Mesh *m2){
-    std::vector<Vec3Df> cf1 = m1->getBarycentres();
-    std::vector<Vec3Df> cf2 = m2->getBarycentres();
-    std::vector<Vec3Df> nf1 = m1->getUnitNormals();
-    std::vector<Vec3Df> nf2 = m2->getUnitNormals();
-    std::vector<Vec3Df> vf1 = m1->getNormals();
-    std::vector<Vec3Df> vf2 = m2->getNormals();
+double Mesh::varifoldMeshInnerProduct(Mesh &m1, Mesh &m2){
+    std::vector<Vec3Df> cf1 = m1.getBarycentres();
+    std::vector<Vec3Df> cf2 = m2.getBarycentres();
+    std::vector<Vec3Df> nf1 = m1.getUnitNormals();
+    std::vector<Vec3Df> nf2 = m2.getUnitNormals();
+    std::vector<Vec3Df> vf1 = m1.getNormals();
+    std::vector<Vec3Df> vf2 = m2.getNormals();
     unsigned long long nm1 = cf1.size();
     unsigned long long nm2 = cf2.size();
 
@@ -630,7 +612,7 @@ double Mesh::varifoldMeshInnerProduct(Mesh *m1, Mesh *m2){
     return sum;
 }
 
-double Mesh::varifoldDistance(Mesh *m1, Mesh *m2){
+double Mesh::varifoldDistance(Mesh &m1, Mesh &m2){
     double m1prod = varifoldMeshInnerProduct(m1, m1);
     double m2prod = varifoldMeshInnerProduct(m2, m2);
     double m1m2prod = varifoldMeshInnerProduct(m1, m2);

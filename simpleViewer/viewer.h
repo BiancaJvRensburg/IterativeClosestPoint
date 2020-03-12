@@ -15,9 +15,11 @@ class Viewer : public QGLViewer
 
 public :
     Viewer(QWidget *parent, StandardCamera *camera);
+    Mesh& getMesh(bool isBase){ if(isBase) return baseMesh;
+                                else return mesh; }
 
 public Q_SLOTS:
-    void openOFF(QString filename);
+    void openOFF(QString filename, Mesh &m, bool isBase);
     void registration();
     void registrationSingleStep();
     void rotateX();     // rotate 90° around the x axis
@@ -25,9 +27,6 @@ public Q_SLOTS:
     void rotateZ();
     void autoRotate();
     void toUpdate();
-    void increaseNbToDraw();
-    void decreaseNbToDraw();
-
 protected:
     virtual void draw();
     virtual void init();
@@ -35,9 +34,9 @@ protected:
     void initCurve();
     void updateCamera(const Vec3Df & center, float radius);
 
-    std::vector<Mesh*> meshes;
     ManipulatedFrame* viewerFrame;
-    unsigned int baseMesh = 0;
-    int nbToDraw = 0;
+    Mesh baseMesh;
+    Mesh mesh;
     Curve *curve;
+    bool isMeshActive;
 };

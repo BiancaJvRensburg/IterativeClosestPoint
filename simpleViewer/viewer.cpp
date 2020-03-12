@@ -7,6 +7,7 @@ Viewer::Viewer(QWidget *parent, StandardCamera *cam) : QGLViewer(parent) {
     Camera *c = camera();       // switch the cameras
     setCamera(cam);
     delete c;
+    isMeshActive = true;
 }
 
 void Viewer::draw() {
@@ -18,7 +19,12 @@ void Viewer::draw() {
     curve->draw();
     curve->drawControl();
 
-    for(unsigned int i=0; i<static_cast<unsigned int>(nbToDraw); i++) meshes[i]->draw();
+    glColor3f(1.0, 0, 0);
+    mesh.draw();
+
+    glColor3f(0, 1.0, 0);
+    baseMesh.draw();
+
     glPopMatrix();
 }
 
@@ -37,27 +43,23 @@ void Viewer::init() {
   initCurve();
 }
 
-void Viewer::openOFF(QString filename) {
-    unsigned long long lastIndex = meshes.size();
-    meshes.push_back(new Mesh());
-    std::vector<Vec3Df> &vertices = meshes[lastIndex]->getVertices();
-    std::vector<Triangle> &triangles = meshes[lastIndex]->getTriangles();
+void Viewer::openOFF(QString filename, Mesh &m, bool isBase) {
+    std::vector<Vec3Df> &vertices = m.getVertices();
+    std::vector<Triangle> &triangles = m.getTriangles();
 
     FileIO::openOFF(filename.toStdString(), vertices, triangles);
 
-    meshes[lastIndex]->init(static_cast<int>(lastIndex), viewerFrame);
-    if(lastIndex!=baseMesh) meshes[lastIndex]->alignWithBase(meshes[baseMesh]);
-    nbToDraw++;
-
-    connect(meshes[lastIndex], &Mesh::updateViewer, this, &Viewer::toUpdate);
+    m.init(viewerFrame);
+    connect(&m, &Mesh::updateViewer, this, &Viewer::toUpdate);
 
     // Set the camera
-    if(meshes.size()==baseMesh+1){
-        Vec c = meshes[baseMesh]->getBBCentre();
+    if(isBase){
+        Vec c = m.getBBCentre();
         Vec3Df center = Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
-        float radius = meshes[baseMesh]->getBBRadius();
+        float radius = m.getBBRadius();
         updateCamera(center, radius);
     }
+    else m.alignWithBase(baseMesh);
 
     std::cout << "File loaded " << std::endl;
 
@@ -99,39 +101,32 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 }
 
 void Viewer::registration(){
-    for(unsigned int i=1; i<meshes.size(); i++) meshes[i]->icp(meshes[baseMesh]);
+    mesh.icp(baseMesh);
     update();
 }
 
 void Viewer::registrationSingleStep(){
-    for(unsigned int i=1; i<meshes.size(); i++) meshes[i]->icpSingleIteration(meshes[baseMesh]);
+    mesh.icpSingleIteration(baseMesh);
 }
 
 void Viewer::rotateX(){
-    meshes[meshes.size()-1]->rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+    if(isMeshActive) mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+    else mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateY(){
-    meshes[meshes.size()-1]->rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+    if(isMeshActive) mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+    else mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateZ(){
-    meshes[meshes.size()-1]->rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
+    if(isMeshActive) mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
+    else mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::autoRotate(){
-    meshes[meshes.size()-1]->rotateToBase(meshes[baseMesh]);
-}
-
-void Viewer::increaseNbToDraw(){
-    if(nbToDraw<static_cast<int>(meshes.size())) nbToDraw++;
-    update();
-}
-
-void Viewer::decreaseNbToDraw(){
-    if(nbToDraw>0) nbToDraw--;
-    update();
+    mesh.rotateToBase(baseMesh);
 }
