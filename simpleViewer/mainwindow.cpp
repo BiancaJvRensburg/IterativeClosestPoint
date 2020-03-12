@@ -65,6 +65,9 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
+    QAction *activeMeshToggleAction = new QAction("Toggle Active Mesh", this);
+    connect(activeMeshToggleAction, &QAction::triggered, view, &Viewer::toggleActiveMesh);
+
     QAction *rxAction = new QAction("Rotate X 90°", this);
     connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
 
@@ -77,6 +80,7 @@ void MainWindow::initFileActions(){
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
+    fileActionGroup->addAction(activeMeshToggleAction);
     fileActionGroup->addAction(rxAction);
     fileActionGroup->addAction(ryAction);
     fileActionGroup->addAction(rzAction);

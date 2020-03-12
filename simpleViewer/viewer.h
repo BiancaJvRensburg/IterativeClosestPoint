@@ -27,6 +27,7 @@ public Q_SLOTS:
     void rotateZ();
     void autoRotate();
     void toUpdate();
+    void toggleActiveMesh(){ isMeshActive = !isMeshActive; update(); }
 protected:
     virtual void draw();
     virtual void init();

@@ -19,10 +19,12 @@ void Viewer::draw() {
     curve->draw();
     curve->drawControl();
 
-    glColor3f(1.0, 0, 0);
+    if(isMeshActive) glColor3f(1.0, 0, 0);
+    else glColor3f(1.0, 1.0, 1.0);
     mesh.draw();
 
-    glColor3f(0, 1.0, 0);
+    if(!isMeshActive) glColor3f(1.0, 0, 0);
+    else glColor3f(1.0, 1.0, 1.0);
     baseMesh.draw();
 
     glPopMatrix();
@@ -111,19 +113,19 @@ void Viewer::registrationSingleStep(){
 
 void Viewer::rotateX(){
     if(isMeshActive) mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
-    else mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+    else baseMesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateY(){
     if(isMeshActive) mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
-    else mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+    else baseMesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateZ(){
     if(isMeshActive) mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
-    else mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
+    else baseMesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
     update();
 }
 
