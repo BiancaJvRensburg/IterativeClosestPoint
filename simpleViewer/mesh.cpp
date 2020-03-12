@@ -12,6 +12,7 @@ void Mesh::init(const Frame *ref){
     setReferenceFrame(ref);
 
     distError = FLT_MAX;
+    transparencyAlpha = 0.5;
 
     zero();
 

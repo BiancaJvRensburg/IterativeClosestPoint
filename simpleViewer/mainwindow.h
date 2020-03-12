@@ -21,6 +21,7 @@ private:
     void initFileMenu();
     void initToolBars();
     void initFileActions();
+    void initDisplayDockWidgets();
 
 private Q_SLOTS:
     void openMesh();

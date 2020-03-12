@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->setCentralWidget(viewerGroupBox);
 
+    initDisplayDockWidgets();
     initFileMenu();
     initToolBars();
 
@@ -59,7 +60,7 @@ void MainWindow::initFileActions(){
     QAction *openFileAction = new QAction("Open mesh", this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
 
-    QAction *saveFileAction = new QAction("Open mesh", this);
+    QAction *saveFileAction = new QAction("Save mesh", this);
     connect(saveFileAction, &QAction::triggered, this, &MainWindow::saveMesh);
 
     QAction *icpStepAction = new QAction("Registration iteration", this);
@@ -68,30 +69,10 @@ void MainWindow::initFileActions(){
     QAction *icpAction = new QAction("Registration", this);
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
-    QAction *drawMeshToggleAction = new QAction("Draw Mesh", this);
-    connect(drawMeshToggleAction, &QAction::triggered, view, &Viewer::toggleDrawMesh);
-
-    QAction *drawBaseToggleAction = new QAction("Draw Base", this);
-    connect(drawBaseToggleAction, &QAction::triggered, view, &Viewer::toggleDrawBase);
-
-    QAction *rxAction = new QAction("Rotate X 90°", this);
-    connect(rxAction, &QAction::triggered, view, &Viewer::rotateX);
-
-    QAction *ryAction = new QAction("Rotate Y 90°", this);
-    connect(ryAction, &QAction::triggered, view, &Viewer::rotateY);
-
-    QAction *rzAction = new QAction("Rotate Z 90°", this);
-    connect(rzAction, &QAction::triggered, view, &Viewer::rotateZ);
-
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(saveFileAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
-    fileActionGroup->addAction(drawMeshToggleAction);
-    fileActionGroup->addAction(drawBaseToggleAction);
-    fileActionGroup->addAction(rxAction);
-    fileActionGroup->addAction(ryAction);
-    fileActionGroup->addAction(rzAction);
 }
 
 void MainWindow::initFileMenu(){
@@ -105,6 +86,57 @@ void MainWindow::initToolBars () {
     QToolBar *fileToolBar = new QToolBar(this);
     fileToolBar->addActions(fileActionGroup->actions());
     addToolBar(fileToolBar);
+}
+
+void MainWindow::initDisplayDockWidgets(){
+    QDockWidget* dockW = new QDockWidget("Controls");
+
+    QHBoxLayout* layout = new QHBoxLayout();
+
+    // The contents of the dockWidget
+    QWidget *contents = new QWidget();
+    QFormLayout *contentLayout = new QFormLayout();
+
+    QSlider *baseAlphaSlider = new QSlider(Qt::Horizontal);
+    baseAlphaSlider->setMaximum(100);
+    baseAlphaSlider->setSliderPosition(50);
+    contentLayout->addRow("Base transparency", baseAlphaSlider);
+
+    QSlider *meshAlphaSlider = new QSlider(Qt::Horizontal);
+    meshAlphaSlider->setMaximum(100);
+    meshAlphaSlider->setSliderPosition(50);
+    contentLayout->addRow("Mesh transparency", meshAlphaSlider);
+
+    QSlider *rotateXSlider = new QSlider(Qt::Horizontal);
+    rotateXSlider->setMaximum(360);
+    contentLayout->addRow("Rotate X", rotateXSlider);
+
+    QSlider *rotateYSlider = new QSlider(Qt::Horizontal);
+    rotateYSlider->setMaximum(360);
+    contentLayout->addRow("Rotate Y", rotateYSlider);
+
+    QSlider *rotateZSlider = new QSlider(Qt::Horizontal);
+    rotateZSlider->setMaximum(360);
+    contentLayout->addRow("Rotate Z", rotateZSlider);
+
+
+    // Connect the skull sliders
+    connect(baseAlphaSlider, static_cast<void (QSlider::*)(int)>(&QSlider::sliderMoved), view, &Viewer::setBaseAlpha);
+    connect(meshAlphaSlider, static_cast<void (QSlider::*)(int)>(&QSlider::sliderMoved), view, &Viewer::setMeshAlpha);
+    connect(rotateXSlider, static_cast<void (QSlider::*)(int)>(&QSlider::sliderMoved), view, &Viewer::rotateX);
+    connect(rotateYSlider, static_cast<void (QSlider::*)(int)>(&QSlider::sliderMoved), view, &Viewer::rotateY);
+    connect(rotateZSlider, static_cast<void (QSlider::*)(int)>(&QSlider::sliderMoved), view, &Viewer::rotateZ);
+
+    contents->setLayout(contentLayout);
+
+    layout->addWidget(contents);
+
+    QWidget* controlWidget = new QWidget();
+    controlWidget->setLayout(layout);
+
+    dockW->setWidget(controlWidget);
+
+    this->addDockWidget(Qt::RightDockWidgetArea, dockW);
 }
 
 void MainWindow::openMesh(){

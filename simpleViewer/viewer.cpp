@@ -7,8 +7,9 @@ Viewer::Viewer(QWidget *parent, StandardCamera *cam) : QGLViewer(parent) {
     Camera *c = camera();       // switch the cameras
     setCamera(cam);
     delete c;
-    isDrawBase = true;
-    isDrawMesh = true;
+    prevX = 0;
+    prevY = 0;
+    prevZ = 0;
 }
 
 void Viewer::draw() {
@@ -20,15 +21,11 @@ void Viewer::draw() {
     curve->draw();
     curve->drawControl();
 
-    if(isDrawMesh){
-        glColor4f(1.0, 0, 0, 0.5);
-        mesh.draw();
-    }
+    glColor4f(1.0, 0, 0, mesh.getAlpha());
+    mesh.draw();
 
-    if(isDrawBase){
-        glColor4f(1., 1., 1., 0.5);
-        baseMesh.draw();
-    }
+    glColor4f(1., 1., 1., baseMesh.getAlpha());
+    baseMesh.draw();
 
     glPopMatrix();
 }
@@ -119,21 +116,45 @@ void Viewer::registrationSingleStep(){
     mesh.icpSingleIteration(baseMesh);
 }
 
-void Viewer::rotateX(){
-    mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+void Viewer::rotateX(int position){
+    int pos = position - prevX;
+    prevX = position;
+
+    double theta = static_cast<double>(pos) * M_PI/ 180.0 + M_PI;
+    mesh.rotateAroundAxis(Vec(1,0,0), theta);
     update();
 }
 
-void Viewer::rotateY(){
-    mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+void Viewer::rotateY(int position){
+    int pos = position - prevY;
+    prevY = position;
+
+    double theta = static_cast<double>(pos) * M_PI/ 180.0 + M_PI;
+    mesh.rotateAroundAxis(Vec(0,1,0), theta);
     update();
 }
 
-void Viewer::rotateZ(){
-    mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
+void Viewer::rotateZ(int position){
+    int pos = position - prevZ;
+    prevZ = position;
+
+    double theta = static_cast<double>(pos) * M_PI/ 180.0 + M_PI;
+    mesh.rotateAroundAxis(Vec(0,0,1), theta);
     update();
 }
 
 void Viewer::autoRotate(){
     mesh.rotateToBase(baseMesh);
+}
+
+void Viewer::setBaseAlpha(int alpha){
+    float a = static_cast<float>(alpha) / 100.f;
+    baseMesh.setAlpha(a);
+    update();
+}
+
+void Viewer::setMeshAlpha(int alpha){
+    float a = static_cast<float>(alpha) / 100.f;
+    mesh.setAlpha(a);
+    update();
 }

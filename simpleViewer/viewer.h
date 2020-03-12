@@ -23,13 +23,14 @@ public Q_SLOTS:
     void saveOFF(const QString & filename);
     void registration();
     void registrationSingleStep();
-    void rotateX();     // rotate 90° around the x axis
-    void rotateY();
-    void rotateZ();
+    void rotateX(int);     // rotate 90° around the x axis
+    void rotateY(int);
+    void rotateZ(int);
     void autoRotate();
     void toUpdate();
-    void toggleDrawMesh(){ isDrawMesh = !isDrawMesh; update(); }
-    void toggleDrawBase(){ isDrawBase = !isDrawBase; update(); }
+    void setBaseAlpha(int);
+    void setMeshAlpha(int);
+
 protected:
     virtual void draw();
     virtual void init();
@@ -41,6 +42,5 @@ protected:
     Mesh baseMesh;
     Mesh mesh;
     Curve *curve;
-    bool isDrawMesh;
-    bool isDrawBase;
+    int prevX, prevY, prevZ;
 };

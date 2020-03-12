@@ -35,11 +35,11 @@ public:
     std::vector<Vec3Df>& getUnitNormals(){ return unitNormals; }
 
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
-
     void init(const Frame *ref);
     void draw();
-
     void clear();
+    float& getAlpha(){ return transparencyAlpha; }
+    void setAlpha(float alpha){ transparencyAlpha = alpha; }
 
     float getBBRadius(){ return radius; }
     Vec getBBCentre(){ return frame.localInverseCoordinatesOf(Vec(BBCentre)); }
@@ -145,6 +145,8 @@ protected:
     float distError;
 
     int normalDirection;
+
+    float transparencyAlpha;
 
     Frame frame;        // can do rotations from the frame?
 };
