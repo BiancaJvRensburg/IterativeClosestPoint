@@ -19,7 +19,6 @@ void Viewer::draw() {
     glMultMatrixd(manipulatedFrame()->matrix());
 
     curve->draw();
-    curve->drawControl();
 
     glColor4f(1.0, 0, 0, mesh.getAlpha());
     mesh.draw();

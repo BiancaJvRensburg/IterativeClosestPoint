@@ -20,18 +20,7 @@ public:
     Vec& getPoint(unsigned int index){ return curve[index]; }
     unsigned int& getNbU(){ return nbU; }
 
-    Vec tangent(unsigned int index);
-    Vec normal(unsigned int index);
-    Vec binormal(unsigned int index);
-    void getFrame(unsigned int index, Vec& t, Vec& n, Vec& b);
-
     void draw();
-    void drawControl();
-    void drawTangent(unsigned int index);
-
-    double discreteLength(unsigned int indexS, unsigned int indexE);      // Returns the discrete length between 2 points (Straight line distance)
-    double discreteChordLength(unsigned int indexS, unsigned int indexE); // To use for the initial visualisation
-    unsigned int indexForLength(unsigned int indexS, double length);   // Returns the end index which will create a segment of a certain length
 
 public Q_SLOTS:
     void reintialiseCurve();
@@ -49,25 +38,13 @@ private:
     std::vector<double> knotVector;
     unsigned int knotIndex;
 
-    // BSpline
-    std::vector<double> generateUniformKnotVector(unsigned int k);
-    Vec deBoor(double u, unsigned int i, unsigned int r);
-    Vec* splineDerivative(unsigned int k);
-    Vec deBoorDerivative(double u, unsigned int i, unsigned int r, unsigned int k);
-
     // Catmull rom
-    void catmullrom();  // calculate the spline and the first derivative
-    void calculateCatmullPoints(Vec& c, Vec& cp, Vec& cpp, double t);
+    void catmullrom();
+    void calculateCatmullPoints(Vec& c, double t);
 
     std::vector<double> generateCatmullKnotVector(double alpha);
 
     void initConnections();
-
-    unsigned int getClosestDistance(double target, unsigned int indexS, unsigned int a, unsigned int b);       // get the index which is closest to the target distance
-
-    // Frenet frame
-    Vec* dt;
-    Vec* d2t;
 };
 
 #endif // CURVE_H

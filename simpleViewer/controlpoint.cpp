@@ -7,19 +7,11 @@ ControlPoint::ControlPoint()
 {
     this->p = Vec(0,0,0);
     initialise();
-    isSwitchFrames = true;
 }
 
 ControlPoint::ControlPoint(const Vec& p)
 {
     this->p = p;
-    initialise();
-    isSwitchFrames = true;
-}
-
-ControlPoint::ControlPoint(double x, double y, double z)
-{
-    this->p = Vec(x,y,z);
     initialise();
 }
 
@@ -30,11 +22,8 @@ void ControlPoint::initialise(){
 }
 
 void ControlPoint::draw(){
-
-    if(isSwitchFrames){
-        glPushMatrix();
-        glMultMatrixd(mf.matrix());
-    }
+    glPushMatrix();
+    glMultMatrixd(mf.matrix());
 
     if(mf.grabsMouse()) glColor3f(0, 1, 1);
     else glColor3f(0.6f, 0, 0.4f);
@@ -47,7 +36,7 @@ void ControlPoint::draw(){
     glPointSize(1.0);
     glColor3f(1.0,1.0,1.0);
 
-    if(isSwitchFrames) glPopMatrix();
+    glPopMatrix();
 }
 
 void ControlPoint::cntrlMoved(){
