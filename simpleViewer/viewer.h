@@ -27,7 +27,8 @@ public Q_SLOTS:
     void rotateZ();
     void autoRotate();
     void toUpdate();
-    void toggleActiveMesh(){ isMeshActive = !isMeshActive; update(); }
+    void toggleDrawMesh(){ isDrawMesh = !isDrawMesh; update(); }
+    void toggleDrawBase(){ isDrawBase = !isDrawBase; update(); }
 protected:
     virtual void draw();
     virtual void init();
@@ -39,5 +40,6 @@ protected:
     Mesh baseMesh;
     Mesh mesh;
     Curve *curve;
-    bool isMeshActive;
+    bool isDrawMesh;
+    bool isDrawBase;
 };

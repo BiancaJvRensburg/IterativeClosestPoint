@@ -7,7 +7,8 @@ Viewer::Viewer(QWidget *parent, StandardCamera *cam) : QGLViewer(parent) {
     Camera *c = camera();       // switch the cameras
     setCamera(cam);
     delete c;
-    isMeshActive = true;
+    isDrawBase = true;
+    isDrawMesh = true;
 }
 
 void Viewer::draw() {
@@ -19,13 +20,15 @@ void Viewer::draw() {
     curve->draw();
     curve->drawControl();
 
-    if(isMeshActive) glColor3f(1.0, 0, 0);
-    else glColor3f(1.0, 1.0, 1.0);
-    mesh.draw();
+    if(isDrawMesh){
+        glColor3f(1.0, 0, 0);
+        mesh.draw();
+    }
 
-    if(!isMeshActive) glColor3f(1.0, 0, 0);
-    else glColor3f(1.0, 1.0, 1.0);
-    baseMesh.draw();
+    if(isDrawBase){
+        glColor3f(1.0, 1.0, 1.0);
+        baseMesh.draw();
+    }
 
     glPopMatrix();
 }
@@ -112,20 +115,17 @@ void Viewer::registrationSingleStep(){
 }
 
 void Viewer::rotateX(){
-    if(isMeshActive) mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
-    else baseMesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
+    mesh.rotateAroundAxis(Vec(1,0,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateY(){
-    if(isMeshActive) mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
-    else baseMesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
+    mesh.rotateAroundAxis(Vec(0,1,0), M_PI/2.0+M_PI);
     update();
 }
 
 void Viewer::rotateZ(){
-    if(isMeshActive) mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
-    else baseMesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
+    mesh.rotateAroundAxis(Vec(0,0,1), M_PI/2.0+M_PI);
     update();
 }
 
