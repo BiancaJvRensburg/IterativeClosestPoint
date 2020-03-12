@@ -63,6 +63,9 @@ void MainWindow::initFileActions(){
     QAction *saveFileAction = new QAction("Save mesh", this);
     connect(saveFileAction, &QAction::triggered, this, &MainWindow::saveMesh);
 
+    QAction *saveJsonAction = new QAction("Save json", this);
+    connect(saveJsonAction, &QAction::triggered, this, &MainWindow::saveJSON);
+
     QAction *icpStepAction = new QAction("Registration iteration", this);
     connect(icpStepAction, &QAction::triggered, view, &Viewer::registrationSingleStep);
 
@@ -71,6 +74,7 @@ void MainWindow::initFileActions(){
 
     fileActionGroup->addAction(openFileAction);
     fileActionGroup->addAction(saveFileAction);
+    fileActionGroup->addAction(saveJsonAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
 }
@@ -166,5 +170,26 @@ void MainWindow::saveMesh(){
     if(!fileName.endsWith(".off")) fileName.append(".off");
 
     view->saveOFF(fileName);
+}
+
+void MainWindow::writeJSON(QJsonObject &json) const{
+    QJsonObject meshJSON;
+    view->writeJSON(meshJSON);
+    json["calibration"] = meshJSON;
+}
+
+void MainWindow::saveJSON(){
+    QString fileName = QFileDialog::getSaveFileName(this, "Save mesh file as ", "./data/", "JSON (*.json)");
+    QFile saveFile(fileName);
+
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        qWarning("Couldn't open save file.");
+        return;
+    }
+
+    QJsonObject jsonObject;
+    writeJSON(jsonObject);
+    QJsonDocument saveDoc(jsonObject);
+    saveFile.write(saveDoc.toJson());
 }
 

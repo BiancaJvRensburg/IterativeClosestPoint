@@ -61,6 +61,8 @@ public:
     double singleMeshInnerSquareProduct(Vec3Df &normalB, Vec3Df& unitNormal);
     double singleMeshInnerProduct(std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB, unsigned int indexA, unsigned int indexB);
 
+    // JSON object
+    void writeJSON(QJsonObject &json) const;
 Q_SIGNALS:
     void updateViewer();
 

@@ -73,8 +73,7 @@ void Viewer::saveOFF(const QString & filename){
 }
 
 void Viewer::initCurve(){
-    std::vector<Vec> control;
-     const long nbCP = 9;
+    control.clear();
 
     control.push_back(Vec(-5, 5.31, -4.34849));
 
@@ -90,7 +89,7 @@ void Viewer::initCurve(){
 
     control.push_back(Vec(5, 5.31, -4.34849));
 
-    curve = new Curve(nbCP, control);
+    curve = new Curve(control.size(), control);
 
     unsigned int nbU = 100;
     curve->generateCatmull(nbU);
@@ -156,4 +155,18 @@ void Viewer::setMeshAlpha(int alpha){
     float a = static_cast<float>(alpha) / 100.f;
     mesh.setAlpha(a);
     update();
+}
+
+void Viewer::writeJSON(QJsonObject &json) const{
+    QJsonObject jMesh;
+    mesh.writeJSON(jMesh);
+    json["mesh"] = jMesh;
+
+    QJsonArray cntrlArray;
+    for(unsigned int i=0; i<control.size(); i++){
+        QJsonArray v;
+        for(unsigned int j=0; j<3; j++) v.append(control[i][j]);
+        cntrlArray.append(v);
+    }
+    json["control points"] = cntrlArray;
 }

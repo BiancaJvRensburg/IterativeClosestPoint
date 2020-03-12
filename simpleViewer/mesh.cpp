@@ -669,3 +669,23 @@ void Mesh::findClosestPointsVarifold(std::vector<Vec3Df> &baseVertices, std::vec
             closestPoints.push_back(baseVertices[static_cast<unsigned int>(minIndex)]);
         }
 }
+
+
+// JSON
+void Mesh::writeJSON(QJsonObject &json) const{
+    QJsonArray ver;
+    for(unsigned int i=0; i<vertices.size(); i++){
+        QJsonArray v;
+        for(int j=0; j<3; j++) v.append(static_cast<double>(vertices[i][j]));
+        ver.append(v);
+    }
+    json["vertices"] = ver;
+
+    QJsonArray tri;
+    for(unsigned int i=0; i<triangles.size(); i++){
+        QJsonArray v;
+        for(unsigned int j=0; j<3; j++) v.append(triangles[i][j]);
+        tri.append(v);
+    }
+    json["triangles"] = tri;
+}

@@ -13,23 +13,22 @@ public:
     ~MainWindow();
 
 private:
-    // Main viewers
-    Viewer *view;
-
-    // File menu
-    QActionGroup *fileActionGroup;
     void initFileMenu();
     void initToolBars();
     void initFileActions();
     void initDisplayDockWidgets();
+    void writeJSON(QJsonObject &json) const;
 
 private Q_SLOTS:
     void openMesh();
     void saveMesh();
+    void saveJSON();
 
 private:
     void openBaseMesh();
     bool isBase;
+    Viewer *view;
+    QActionGroup *fileActionGroup;
 };
 
 #endif // MAINWINDOW_H
