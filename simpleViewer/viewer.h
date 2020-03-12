@@ -20,6 +20,7 @@ public :
 
 public Q_SLOTS:
     void openOFF(QString filename, Mesh &m, bool isBase);
+    void saveOFF(const QString & filename);
     void registration();
     void registrationSingleStep();
     void rotateX();     // rotate 90° around the x axis

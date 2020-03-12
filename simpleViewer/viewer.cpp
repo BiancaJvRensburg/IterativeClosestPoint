@@ -21,12 +21,12 @@ void Viewer::draw() {
     curve->drawControl();
 
     if(isDrawMesh){
-        glColor3f(1.0, 0, 0);
+        glColor4f(1.0, 0, 0, 0.5);
         mesh.draw();
     }
 
     if(isDrawBase){
-        glColor3f(1.0, 1.0, 1.0);
+        glColor4f(1., 1., 1., 0.5);
         baseMesh.draw();
     }
 
@@ -42,8 +42,9 @@ void Viewer::init() {
   setAxisIsDrawn(false);
 
   glEnable(GL_LIGHTING);
-  //glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
 
   initCurve();
 }
@@ -69,6 +70,10 @@ void Viewer::openOFF(QString filename, Mesh &m, bool isBase) {
     std::cout << "File loaded " << std::endl;
 
     update();
+}
+
+void Viewer::saveOFF(const QString & filename){
+    FileIO::saveOFF(filename.toStdString(), mesh.getVertices(), mesh.getTriangles());
 }
 
 void Viewer::initCurve(){

@@ -24,6 +24,7 @@ private:
 
 private Q_SLOTS:
     void openMesh();
+    void saveMesh();
 
 private:
     void openBaseMesh();

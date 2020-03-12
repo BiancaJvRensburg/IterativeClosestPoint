@@ -85,6 +85,36 @@ namespace FileIO{
             }
         }
     }
+
+    template <typename Point, typename Face>
+   bool saveOFF(const std::string& filename, std::vector<Point> & vertices, std::vector<Face> & triangles)
+    {
+
+            std::ofstream myfile;
+            myfile.open(filename.c_str());
+            if (!myfile.is_open())
+            {
+                std::cout << filename << " cannot be opened" << std::endl;
+                return false;
+            }
+
+            myfile << "OFF" << std::endl;
+            myfile << (vertices.size()) << " " << triangles.size() << " 0" << std::endl;
+
+            for( unsigned int v = 0 ; v < vertices.size() ; ++v )
+            {
+                myfile << (vertices[v]) << std::endl;
+            }
+
+            for( unsigned int t = 0 ; t < triangles.size() ; ++t )
+            {
+                myfile << "3 " << (triangles[t][0]) << " " << (triangles[t][1]) << " " << (triangles[t][2]) << std::endl;
+            }
+
+
+            myfile.close();
+    return true;
+    }
 }
 
 #endif // MESHREADER_H

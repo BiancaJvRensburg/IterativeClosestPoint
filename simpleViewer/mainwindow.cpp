@@ -59,6 +59,9 @@ void MainWindow::initFileActions(){
     QAction *openFileAction = new QAction("Open mesh", this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
 
+    QAction *saveFileAction = new QAction("Open mesh", this);
+    connect(saveFileAction, &QAction::triggered, this, &MainWindow::saveMesh);
+
     QAction *icpStepAction = new QAction("Registration iteration", this);
     connect(icpStepAction, &QAction::triggered, view, &Viewer::registrationSingleStep);
 
@@ -81,6 +84,7 @@ void MainWindow::initFileActions(){
     connect(rzAction, &QAction::triggered, view, &Viewer::rotateZ);
 
     fileActionGroup->addAction(openFileAction);
+    fileActionGroup->addAction(saveFileAction);
     fileActionGroup->addAction(icpAction);
     fileActionGroup->addAction(icpStepAction);
     fileActionGroup->addAction(drawMeshToggleAction);
@@ -120,5 +124,15 @@ void MainWindow::openMesh(){
 void MainWindow::openBaseMesh(){
     QString filename = "C:\\Users\\Medmax\\Documents\\Bianca\\Meshes\\Mandible.off";
     view->openOFF(filename, view->getMesh(true), true);
+}
+
+void MainWindow::saveMesh(){
+    QString fileName = QFileDialog::getSaveFileName(this, "Save mesh file as ", "./data/", "Data (*.off)");
+
+    if (fileName.isEmpty()) return;
+
+    if(!fileName.endsWith(".off")) fileName.append(".off");
+
+    view->saveOFF(fileName);
 }
 

@@ -112,8 +112,8 @@ void Mesh::draw()
     glPushMatrix();
     glMultMatrixd(frame.matrix());
 
-    /*glEnable(GL_DEPTH_TEST);
-    glEnable(GL_DEPTH);*/
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH);
 
     glBegin (GL_TRIANGLES);
 
@@ -123,8 +123,8 @@ void Mesh::draw()
 
     glEnd();
 
-    /*glDisable(GL_DEPTH_TEST);
-    glDisable(GL_DEPTH);*/
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH);
 
     glPopMatrix();
 }
