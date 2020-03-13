@@ -47,5 +47,5 @@ void ControlPoint::cntrlMoved(){
     p.z = z;
 
     Q_EMIT ControlPoint::cntrlPointTranslated();
-    //std::cout << p.x << " , " << p.y << " , " << p.z << std::endl;
+    std::cout << p.x << " , " << p.y << " , " << p.z << std::endl;
 }

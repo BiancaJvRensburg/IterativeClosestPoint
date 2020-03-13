@@ -19,15 +19,18 @@ private:
     void initDisplayDockWidgets();
     void writeJSON(QJsonObject &json);
     void readJSON(const QJsonObject &json);
+    void openFile();
 
 private Q_SLOTS:
     void openMesh();
+    void openFibMesh();
     void openJSON();
     void saveMesh();
     void saveJSON();
 
 private:
     void openBaseMesh();
+    void openFibulaBase();
     bool isBase;
     Viewer *view;
     QActionGroup *fileActionGroup;

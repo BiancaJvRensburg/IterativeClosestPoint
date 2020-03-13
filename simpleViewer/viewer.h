@@ -19,6 +19,7 @@ public :
                                 else return mesh; }
     void writeJSON(QJsonObject &json);
     void readJSON(const QJsonObject &json);
+    void initCurve(bool isMand);
 
 public Q_SLOTS:
     void openOFF(QString filename, Mesh &m, bool isBase);
@@ -37,7 +38,6 @@ protected:
     virtual void draw();
     virtual void init();
 
-    void initCurve();
     void constructCurve();
     void updateCamera(const Vec3Df & center, float radius);
     ManipulatedFrame* viewerFrame;

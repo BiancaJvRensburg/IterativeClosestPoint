@@ -73,22 +73,27 @@ void Viewer::saveOFF(const QString & filename){
     FileIO::saveOFF(filename.toStdString(), mesh.getVertices(), mesh.getTriangles());
 }
 
-void Viewer::initCurve(){
+void Viewer::initCurve(bool isMand){
     control.clear();
-
-    control.push_back(Vec(-5, 5.31, -4.34849));
-
-    control.push_back(Vec(-4.41,1.9687,-2.7316));
-    control.push_back(Vec(-3.84341,-0.8484,-1.6));
-    control.push_back(Vec(-2.53101,-2.57117,1.67488));
-
-    control.push_back(Vec(-0.125591 , -2.97056 , 2.95159));
-
-    control.push_back(Vec(2.53101,-2.57117,1.67488));
-    control.push_back(Vec(3.84341,-0.8484,-1.6));
-    control.push_back(Vec(4.41,1.9687,-2.7316));
-
-    control.push_back(Vec(5, 5.31, -4.34849));
+    if(isMand){
+        control.push_back(Vec(-5, 5.31, -4.34849));
+        control.push_back(Vec(-4.41,1.9687,-2.7316));
+        control.push_back(Vec(-3.84341,-0.8484,-1.6));
+        control.push_back(Vec(-2.53101,-2.57117,1.67488));
+        control.push_back(Vec(-0.125591 , -2.97056 , 2.95159));
+        control.push_back(Vec(2.53101,-2.57117,1.67488));
+        control.push_back(Vec(3.84341,-0.8484,-1.6));
+        control.push_back(Vec(4.41,1.9687,-2.7316));
+        control.push_back(Vec(5, 5.31, -4.34849));
+    }
+    else{
+        control.push_back(Vec(-9.11428,-6.45205,-245.5));
+        control.push_back(Vec(-8.89661,-1.74754,-71.3201));
+        control.push_back(Vec(-3.83517, -3.67523,-152.996));
+        control.push_back(Vec(0.829161,2.00455,57.442));
+        control.push_back(Vec(5.04728,5.46025,148.302));
+        control.push_back(Vec(2.65498,3.14425,239.397));
+    }
 
     constructCurve();
 }
@@ -168,9 +173,11 @@ void Viewer::writeJSON(QJsonObject &json){
     json["mesh"] = jMesh;
 
     QJsonArray cntrlArray;
-    for(unsigned int i=0; i<control.size(); i++){
+    for(unsigned int i=0; i<control.size(); i++){   // this is just
         QJsonArray v;
-        for(int j=0; j<3; j++) v.append(control[i][j]);
+        v.append(curve->getControlPoint(i)->getX());
+        v.append(curve->getControlPoint(i)->getY());
+        v.append(curve->getControlPoint(i)->getZ());
         cntrlArray.append(v);
     }
     json["control points"] = cntrlArray;

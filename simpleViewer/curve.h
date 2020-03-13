@@ -19,6 +19,7 @@ public:
     Vec* getCurve(){ return curve; }
     Vec& getPoint(unsigned int index){ return curve[index]; }
     unsigned int& getNbU(){ return nbU; }
+    ControlPoint* getControlPoint(unsigned int i){ return TabControlPoint[i];}
 
     void draw();
 

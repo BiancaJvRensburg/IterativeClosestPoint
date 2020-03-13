@@ -57,12 +57,14 @@ MainWindow::~MainWindow()
 void MainWindow::initFileActions(){
     fileActionGroup = new QActionGroup(this);
 
-    QAction *openFileAction = new QAction("Open mesh", this);
+    QAction *openFileAction = new QAction("Open mand mesh", this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
+
+    QAction *openFibFileAction = new QAction("Open fib mesh", this);
+    connect(openFibFileAction, &QAction::triggered, this, &MainWindow::openFibMesh);
 
     QAction *openJsonFileAction = new QAction("Open json", this);
     connect(openJsonFileAction, &QAction::triggered, this, &MainWindow::openJSON);
-
 
     QAction *saveFileAction = new QAction("Save mesh", this);
     connect(saveFileAction, &QAction::triggered, this, &MainWindow::saveMesh);
@@ -77,6 +79,7 @@ void MainWindow::initFileActions(){
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
     fileActionGroup->addAction(openFileAction);
+    fileActionGroup->addAction(openFibFileAction);
     fileActionGroup->addAction(openJsonFileAction);
     fileActionGroup->addAction(saveFileAction);
     fileActionGroup->addAction(saveJsonAction);
@@ -150,20 +153,31 @@ void MainWindow::initDisplayDockWidgets(){
 
 void MainWindow::openMesh(){
     openBaseMesh();
+    view->initCurve(true);
+    openFile();
+}
 
+void MainWindow::openFibMesh(){
+    openFibulaBase();
+    view->initCurve(false);
+    openFile();
+}
+
+void MainWindow::openFile(){
     QString openFileNameLabel, selectedFilter;
-
     QString fileFilter = "OFF (*.off)";
-
     QString fileName = QFileDialog::getOpenFileName(this, tr("Select a mesh"), openFileNameLabel, fileFilter, &selectedFilter);
-
     if(fileName.isEmpty()) return;
-
     view->openOFF(fileName, view->getMesh(false), false);
 }
 
 void MainWindow::openBaseMesh(){
     QString filename = "C:\\Users\\Medmax\\Documents\\Bianca\\Meshes\\Mandible.off";
+    view->openOFF(filename, view->getMesh(true), true);
+}
+
+void MainWindow::openFibulaBase(){
+    QString filename = "C:\\Users\\Medmax\\Documents\\Bianca\\Meshes\\fibula_ocho.off";
     view->openOFF(filename, view->getMesh(true), true);
 }
 
