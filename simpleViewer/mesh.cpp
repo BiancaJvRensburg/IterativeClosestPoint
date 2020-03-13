@@ -13,6 +13,7 @@ void Mesh::init(const Frame *ref){
 
     distError = FLT_MAX;
     transparencyAlpha = 0.5;
+    scaleFactor = 1;
 
     zero();
 
@@ -158,7 +159,7 @@ void Mesh::alignWithBase(Mesh &base){
 void Mesh::scaleToBase(Mesh &base){
     float radiusBase = base.getBBRadius();
     float ratio = radiusBase / radius;
-
+    scaleFactor = ratio;
     uniformScale(ratio);
 }
 
@@ -690,6 +691,8 @@ void Mesh::writeJSON(QJsonObject &json){
         tri.append(v);
     }
     json["triangles"] = tri;
+
+    json["scale"] = scaleFactor;
 }
 
 void Mesh::readJSON(const QJsonObject &json){

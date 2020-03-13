@@ -144,9 +144,9 @@ protected:
     Vec3Df BBMax;
     Vec3Df BBCentre;
     float radius;
+    double scaleFactor;
 
     float distError;
-
     int normalDirection;
 
     float transparencyAlpha;

@@ -88,8 +88,8 @@ void Viewer::initCurve(bool isMand){
     }
     else{
         control.push_back(Vec(-9.11428,-6.45205,-245.5));
-        control.push_back(Vec(-8.89661,-1.74754,-71.3201));
         control.push_back(Vec(-3.83517, -3.67523,-152.996));
+        control.push_back(Vec(-8.89661,-1.74754,-71.3201));
         control.push_back(Vec(0.829161,2.00455,57.442));
         control.push_back(Vec(5.04728,5.46025,148.302));
         control.push_back(Vec(2.65498,3.14425,239.397));
