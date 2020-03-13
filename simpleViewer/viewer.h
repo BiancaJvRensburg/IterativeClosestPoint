@@ -17,7 +17,8 @@ public :
     Viewer(QWidget *parent, StandardCamera *camera);
     Mesh& getMesh(bool isBase){ if(isBase) return baseMesh;
                                 else return mesh; }
-    void writeJSON(QJsonObject &json) const;
+    void writeJSON(QJsonObject &json);
+    void readJSON(const QJsonObject &json);
 
 public Q_SLOTS:
     void openOFF(QString filename, Mesh &m, bool isBase);
@@ -37,6 +38,7 @@ protected:
     virtual void init();
 
     void initCurve();
+    void constructCurve();
     void updateCamera(const Vec3Df & center, float radius);
     ManipulatedFrame* viewerFrame;
     Mesh baseMesh;
@@ -44,4 +46,5 @@ protected:
     Curve *curve;
     std::vector<Vec> control;
     int prevX, prevY, prevZ;
+    bool isCurve;
 };

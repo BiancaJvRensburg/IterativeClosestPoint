@@ -10,6 +10,7 @@ Viewer::Viewer(QWidget *parent, StandardCamera *cam) : QGLViewer(parent) {
     prevX = 0;
     prevY = 0;
     prevZ = 0;
+    isCurve = false;
 }
 
 void Viewer::draw() {
@@ -18,7 +19,7 @@ void Viewer::draw() {
     glPushMatrix();
     glMultMatrixd(manipulatedFrame()->matrix());
 
-    curve->draw();
+    if(isCurve) curve->draw();
 
     glColor4f(1.0, 0, 0, mesh.getAlpha());
     mesh.draw();
@@ -42,7 +43,7 @@ void Viewer::init() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
 
-  initCurve();
+  //initCurve();
 }
 
 void Viewer::openOFF(QString filename, Mesh &m, bool isBase) {
@@ -89,10 +90,14 @@ void Viewer::initCurve(){
 
     control.push_back(Vec(5, 5.31, -4.34849));
 
-    curve = new Curve(control.size(), control);
+    constructCurve();
+}
 
+void Viewer::constructCurve(){
+    curve = new Curve(control.size(), control);
     unsigned int nbU = 100;
     curve->generateCatmull(nbU);
+    isCurve = true;
 }
 
 void Viewer::toUpdate(){
@@ -157,7 +162,7 @@ void Viewer::setMeshAlpha(int alpha){
     update();
 }
 
-void Viewer::writeJSON(QJsonObject &json) const{
+void Viewer::writeJSON(QJsonObject &json){
     QJsonObject jMesh;
     mesh.writeJSON(jMesh);
     json["mesh"] = jMesh;
@@ -165,8 +170,32 @@ void Viewer::writeJSON(QJsonObject &json) const{
     QJsonArray cntrlArray;
     for(unsigned int i=0; i<control.size(); i++){
         QJsonArray v;
-        for(unsigned int j=0; j<3; j++) v.append(control[i][j]);
+        for(int j=0; j<3; j++) v.append(control[i][j]);
         cntrlArray.append(v);
     }
     json["control points"] = cntrlArray;
+}
+
+void Viewer::readJSON(const QJsonObject &json){
+    if(json.contains("control points") && json["control points"].isArray()){
+        control.clear();
+        QJsonArray controlArray = json["control points"].toArray();
+        for(int i=0; i<controlArray.size(); i++){
+            QJsonArray singleControl = controlArray[i].toArray();
+            control.push_back(Vec(singleControl[0].toDouble(), singleControl[1].toDouble(), singleControl[2].toDouble()));
+        }
+        constructCurve();
+    }
+
+    if(json.contains("mesh") && json["mesh"].isObject()){
+        QJsonObject meshObject = json["mesh"].toObject();
+        mesh.readJSON(meshObject);
+        mesh.init(viewerFrame);
+        connect(&mesh, &Mesh::updateViewer, this, &Viewer::toUpdate);
+    }
+
+    Vec c = mesh.getBBCentre();
+    Vec3Df center = Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
+    float radius = mesh.getBBRadius();
+    updateCamera(center, radius);
 }

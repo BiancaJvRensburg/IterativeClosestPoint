@@ -60,6 +60,10 @@ void MainWindow::initFileActions(){
     QAction *openFileAction = new QAction("Open mesh", this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::openMesh);
 
+    QAction *openJsonFileAction = new QAction("Open json", this);
+    connect(openJsonFileAction, &QAction::triggered, this, &MainWindow::openJSON);
+
+
     QAction *saveFileAction = new QAction("Save mesh", this);
     connect(saveFileAction, &QAction::triggered, this, &MainWindow::saveMesh);
 
@@ -73,6 +77,7 @@ void MainWindow::initFileActions(){
     connect(icpAction, &QAction::triggered, view, &Viewer::registration);
 
     fileActionGroup->addAction(openFileAction);
+    fileActionGroup->addAction(openJsonFileAction);
     fileActionGroup->addAction(saveFileAction);
     fileActionGroup->addAction(saveJsonAction);
     fileActionGroup->addAction(icpAction);
@@ -172,10 +177,17 @@ void MainWindow::saveMesh(){
     view->saveOFF(fileName);
 }
 
-void MainWindow::writeJSON(QJsonObject &json) const{
+void MainWindow::writeJSON(QJsonObject &json){
     QJsonObject meshJSON;
     view->writeJSON(meshJSON);
     json["calibration"] = meshJSON;
+}
+
+void MainWindow::readJSON(const QJsonObject &json){
+    if(json.contains("calibration") && json["calibration"].isObject()){
+        QJsonObject calibration = json["calibration"].toObject();
+        view->readJSON(calibration);
+    }
 }
 
 void MainWindow::saveJSON(){
@@ -193,3 +205,22 @@ void MainWindow::saveJSON(){
     saveFile.write(saveDoc.toJson());
 }
 
+void MainWindow::openJSON(){
+    QString openFileNameLabel, selectedFilter;
+
+    QString fileFilter = "JSON (*.json)";
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a mesh"), openFileNameLabel, fileFilter, &selectedFilter);
+
+
+    QFile loadFile(filename);
+
+    if (!loadFile.open(QIODevice::ReadOnly)) {
+        qWarning("Couldn't open save file.");
+        return;
+    }
+
+    QByteArray saveData = loadFile.readAll();
+    QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
+
+    readJSON(loadDoc.object());
+}

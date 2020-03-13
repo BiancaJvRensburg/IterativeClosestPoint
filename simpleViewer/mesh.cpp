@@ -672,11 +672,13 @@ void Mesh::findClosestPointsVarifold(std::vector<Vec3Df> &baseVertices, std::vec
 
 
 // JSON
-void Mesh::writeJSON(QJsonObject &json) const{
+void Mesh::writeJSON(QJsonObject &json){
+    std::vector<Vec3Df> worldVertices = vertices;
+    backToWorld(worldVertices);
     QJsonArray ver;
-    for(unsigned int i=0; i<vertices.size(); i++){
+    for(unsigned int i=0; i<worldVertices.size(); i++){
         QJsonArray v;
-        for(int j=0; j<3; j++) v.append(static_cast<double>(vertices[i][j]));
+        for(int j=0; j<3; j++) v.append(static_cast<double>(worldVertices[i][j]));
         ver.append(v);
     }
     json["vertices"] = ver;
@@ -688,4 +690,26 @@ void Mesh::writeJSON(QJsonObject &json) const{
         tri.append(v);
     }
     json["triangles"] = tri;
+}
+
+void Mesh::readJSON(const QJsonObject &json){
+    if(json.contains("vertices") && json["vertices"].isArray()){
+        vertices.clear();
+        QJsonArray vArray = json["vertices"].toArray();
+        for(int i=0; i<vArray.size(); i++){
+            QJsonArray singleV = vArray[i].toArray();
+            vertices.push_back(Vec3Df(singleV[0].toDouble(), singleV[1].toDouble(), singleV[2].toDouble()));
+        }
+    }
+
+    if(json.contains("triangles") && json["triangles"].isArray()){
+        triangles.clear();
+        QJsonArray tArray = json["triangles"].toArray();
+        for(int i=0; i<tArray.size(); i++){
+            QJsonArray singleT = tArray[i].toArray();
+            triangles.push_back(Triangle(singleT[0].toInt(), singleT[1].toInt(), singleT[2].toInt()));
+        }
+    }
+
+    update();
 }

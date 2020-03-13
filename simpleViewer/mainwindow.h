@@ -17,10 +17,12 @@ private:
     void initToolBars();
     void initFileActions();
     void initDisplayDockWidgets();
-    void writeJSON(QJsonObject &json) const;
+    void writeJSON(QJsonObject &json);
+    void readJSON(const QJsonObject &json);
 
 private Q_SLOTS:
     void openMesh();
+    void openJSON();
     void saveMesh();
     void saveJSON();
 
