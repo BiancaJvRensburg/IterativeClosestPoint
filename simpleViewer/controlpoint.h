@@ -19,6 +19,7 @@ public:
     const double& getX(){ return p.x; }
     const double& getY(){ return p.y; }
     const double& getZ(){ return p.z; }
+    void scale(float& s);
 
     void initialise();
     virtual void draw();

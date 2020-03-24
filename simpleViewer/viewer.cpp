@@ -21,11 +21,11 @@ void Viewer::draw() {
 
     if(isCurve) curve->draw();
 
-    glColor4f(1.0, 0, 0, mesh.getAlpha());
-    mesh.draw();
-
-    glColor4f(1., 1., 1., baseMesh.getAlpha());
+    glColor4f(1., 0., 0., baseMesh.getAlpha());
     baseMesh.draw();
+
+    glColor4f(1., 1., 1., mesh.getAlpha());
+    mesh.draw();
 
     glPopMatrix();
 }
@@ -103,6 +103,8 @@ void Viewer::constructCurve(){
     unsigned int nbU = 100;
     curve->generateCatmull(nbU);
     isCurve = true;
+    float s = mesh.getLastScale();
+    curve->scale(s);
 }
 
 void Viewer::toUpdate(){
@@ -116,20 +118,20 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 }
 
 void Viewer::registration(){
-    baseMesh.icp(mesh);
-    Quaternion r = baseMesh.getRotation();
-    Vec t = baseMesh.getTranslation();
-    std::cout << "Translation : " << t.x << " , " << t.y << " , " << t.z << std::endl;
-    std::cout << "Rotation : " << r[0] << " , " << r[1] << " , " << r[2] << " , " << r[3] << std::endl;
+    mesh.icp(baseMesh);
+    Quaternion r = mesh.getRotation();
+    Vec t = mesh.getTranslation();
     curve->rotate(r);
     curve->translate(t);
-    //for(unsigned int i=0; i<control.size(); i++) control[i] += t;
-    //for(unsigned int i=0; i<control.size(); i++) control[i] = control[i] * r;
     update();
 }
 
 void Viewer::registrationSingleStep(){
-    baseMesh.icpSingleIteration(mesh);
+    mesh.icpSingleIteration(baseMesh);
+    Quaternion r = mesh.getLastRotation();
+    Vec t = mesh.getLastTranslation();
+    curve->rotate(r);
+    curve->translate(t);
 }
 
 void Viewer::rotateX(int position){
@@ -175,42 +177,12 @@ void Viewer::setMeshAlpha(int alpha){
     update();
 }
 
-void Viewer::writeJSON(QJsonObject &json){
-    QJsonObject jMesh;
-    mesh.writeJSON(jMesh);
-    json["mesh"] = jMesh;
-
-    QJsonArray cntrlArray;
-    for(unsigned int i=0; i<control.size(); i++){   // this is just
+void Viewer::writeJSON(QJsonArray &cntrlArray){
+    for(unsigned int i=0; i<control.size(); i++){
         QJsonArray v;
         v.append(curve->getControlPoint(i)->getX());
         v.append(curve->getControlPoint(i)->getY());
         v.append(curve->getControlPoint(i)->getZ());
         cntrlArray.append(v);
     }
-    json["control points"] = cntrlArray;
-}
-
-void Viewer::readJSON(const QJsonObject &json){
-    if(json.contains("control points") && json["control points"].isArray()){
-        control.clear();
-        QJsonArray controlArray = json["control points"].toArray();
-        for(int i=0; i<controlArray.size(); i++){
-            QJsonArray singleControl = controlArray[i].toArray();
-            control.push_back(Vec(singleControl[0].toDouble(), singleControl[1].toDouble(), singleControl[2].toDouble()));
-        }
-        constructCurve();
-    }
-
-    if(json.contains("mesh") && json["mesh"].isObject()){
-        QJsonObject meshObject = json["mesh"].toObject();
-        mesh.readJSON(meshObject);
-        mesh.init(viewerFrame);
-        connect(&mesh, &Mesh::updateViewer, this, &Viewer::toUpdate);
-    }
-
-    Vec c = mesh.getBBCentre();
-    Vec3Df center = Vec3Df(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z));
-    float radius = mesh.getBBRadius();
-    updateCamera(center, radius);
 }

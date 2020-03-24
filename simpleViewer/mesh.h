@@ -36,6 +36,9 @@ public:
 
     Quaternion& getRotation(){ return totalRotation; }
     Vec& getTranslation(){ return totalTranslation; }
+    Quaternion& getLastRotation(){ return lastRotation; }
+    Vec& getLastTranslation(){ return lastTranslation; }
+    float& getLastScale(){ return lastScale; }
 
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
     void init(const Frame *ref);
@@ -64,9 +67,6 @@ public:
     double singleMeshInnerSquareProduct(Vec3Df &normalB, Vec3Df& unitNormal);
     double singleMeshInnerProduct(std::vector<Vec3Df>& barycentresB, std::vector<Vec3Df>& normalsB, std::vector<Vec3Df>& unitNormalsB, unsigned int indexA, unsigned int indexB);
 
-    // JSON object
-    void writeJSON(QJsonObject &json);
-    void readJSON(const QJsonObject &json);
 Q_SIGNALS:
     void updateViewer();
 
@@ -156,6 +156,9 @@ protected:
 
     Quaternion totalRotation;
     Vec totalTranslation;
+    Quaternion lastRotation;
+    Vec lastTranslation;
+    float lastScale;
 
     Frame frame;        // can do rotations from the frame?
 };

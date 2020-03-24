@@ -23,6 +23,7 @@ public:
 
     void translate(Vec &t){ frame.translate(t); }
     void rotate(Quaternion &r){ frame.rotate(r); }
+    void scale(float &s);
 
     void draw();
 

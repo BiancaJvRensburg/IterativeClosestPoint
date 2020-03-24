@@ -128,3 +128,8 @@ void Curve::draw(){
 
     glPopMatrix();
 }
+
+void Curve::scale(float &s){
+    for(unsigned int i=0; i<TabControlPoint.size(); i++) TabControlPoint[i]->scale(s);
+    reintialiseCurve();
+}

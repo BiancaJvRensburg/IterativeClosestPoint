@@ -18,14 +18,11 @@ private:
     void initFileActions();
     void initDisplayDockWidgets();
     void writeJSON(QJsonObject &json);
-    void readJSON(const QJsonObject &json);
     void openFile();
 
 private Q_SLOTS:
     void openMesh();
     void openFibMesh();
-    void openJSON();
-    void saveMesh();
     void saveJSON();
 
 private:
@@ -34,6 +31,7 @@ private:
     bool isBase;
     Viewer *view;
     QActionGroup *fileActionGroup;
+    QString meshFileName;
 };
 
 #endif // MAINWINDOW_H

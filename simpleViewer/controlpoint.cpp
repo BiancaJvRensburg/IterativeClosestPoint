@@ -49,3 +49,8 @@ void ControlPoint::cntrlMoved(){
     Q_EMIT ControlPoint::cntrlPointTranslated();
     //std::cout << p.x << " , " << p.y << " , " << p.z << std::endl;
 }
+
+void ControlPoint::scale(float &s){
+    p *= s;
+    mf.setPosition(p);
+}

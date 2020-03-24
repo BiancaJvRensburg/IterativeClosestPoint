@@ -17,8 +17,7 @@ public :
     Viewer(QWidget *parent, StandardCamera *camera);
     Mesh& getMesh(bool isBase){ if(isBase) return baseMesh;
                                 else return mesh; }
-    void writeJSON(QJsonObject &json);
-    void readJSON(const QJsonObject &json);
+    void writeJSON(QJsonArray &cntrlArray);
     void initCurve(bool isMand);
 
 public Q_SLOTS:
