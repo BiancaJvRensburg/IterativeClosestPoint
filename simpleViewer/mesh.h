@@ -34,6 +34,9 @@ public:
     std::vector<Vec3Df>& getNormals(){ return normals; }
     std::vector<Vec3Df>& getUnitNormals(){ return unitNormals; }
 
+    Quaternion& getRotation(){ return totalRotation; }
+    Vec& getTranslation(){ return totalTranslation; }
+
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
     void init(const Frame *ref);
     void draw();
@@ -150,6 +153,9 @@ protected:
     int normalDirection;
 
     float transparencyAlpha;
+
+    Quaternion totalRotation;
+    Vec totalTranslation;
 
     Frame frame;        // can do rotations from the frame?
 };

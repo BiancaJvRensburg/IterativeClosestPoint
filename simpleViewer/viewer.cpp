@@ -99,7 +99,7 @@ void Viewer::initCurve(bool isMand){
 }
 
 void Viewer::constructCurve(){
-    curve = new Curve(control.size(), control);
+    curve = new Curve(control.size(), control, viewerFrame);
     unsigned int nbU = 100;
     curve->generateCatmull(nbU);
     isCurve = true;
@@ -116,12 +116,20 @@ void Viewer::updateCamera(const Vec3Df & center, float radius){
 }
 
 void Viewer::registration(){
-    mesh.icp(baseMesh);
+    baseMesh.icp(mesh);
+    Quaternion r = baseMesh.getRotation();
+    Vec t = baseMesh.getTranslation();
+    std::cout << "Translation : " << t.x << " , " << t.y << " , " << t.z << std::endl;
+    std::cout << "Rotation : " << r[0] << " , " << r[1] << " , " << r[2] << " , " << r[3] << std::endl;
+    curve->rotate(r);
+    curve->translate(t);
+    //for(unsigned int i=0; i<control.size(); i++) control[i] += t;
+    //for(unsigned int i=0; i<control.size(); i++) control[i] = control[i] * r;
     update();
 }
 
 void Viewer::registrationSingleStep(){
-    mesh.icpSingleIteration(baseMesh);
+    baseMesh.icpSingleIteration(mesh);
 }
 
 void Viewer::rotateX(int position){

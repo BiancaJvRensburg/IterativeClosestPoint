@@ -15,6 +15,9 @@ void Mesh::init(const Frame *ref){
     transparencyAlpha = 0.5;
     scaleFactor = 1;
 
+    totalRotation = Quaternion();
+    totalTranslation = Vec(0.,0.,0.);
+
     zero();
 
     update();
@@ -253,7 +256,10 @@ void Mesh::icpStep(Mesh& base){    // get the base in terms of our frame (this c
 void Mesh::applyAlignment(Quaternion &r, float &s, std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df> &worldCorrespondances){
     frame.rotate(r);
     //uniformScale(s);
-    translate(Vec(findTranslation(worldVertices, worldCorrespondances)));
+    Vec t = Vec(findTranslation(worldVertices, worldCorrespondances));
+    translate((t));
+    totalRotation *= r;
+    totalTranslation += t;
 }
 
 float Mesh::getError(std::vector<Vec3Df> &a, std::vector<Vec3Df> &b){

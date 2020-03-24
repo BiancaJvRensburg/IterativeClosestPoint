@@ -2,7 +2,11 @@
 #include "math.h"
 #include <GL/gl.h>
 
-Curve::Curve(unsigned int nbCP, std::vector<Vec>& cntrlPoints){
+Curve::Curve(unsigned int nbCP, std::vector<Vec>& cntrlPoints, const Frame* ref){
+    frame = Frame();
+    frame.setPosition(Vec(0,0,0));
+    frame.setReferenceFrame(ref);
+
     this->nbU = 0;
     nbControlPoint = nbCP;
 
@@ -89,6 +93,9 @@ void Curve::catmullrom(){
 }
 
 void Curve::draw(){
+    glPushMatrix();
+    glMultMatrixd(frame.matrix());
+
     glBegin(GL_LINE_STRIP);
     glColor3f(0.0, 1.0, 0.0);
     glLineWidth(3.0);
@@ -118,4 +125,6 @@ void Curve::draw(){
         glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
     }
     glEnd();
+
+    glPopMatrix();
 }
