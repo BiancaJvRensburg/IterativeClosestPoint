@@ -21,10 +21,10 @@ void Viewer::draw() {
 
     if(isCurve) curve->draw();
 
-    glColor4f(1., 0., 0., baseMesh.getAlpha());
+    glColor4f(1., 1., 1., baseMesh.getAlpha());
     baseMesh.draw();
 
-    glColor4f(1., 1., 1., mesh.getAlpha());
+    glColor4f(1., 0., 0., mesh.getAlpha());
     mesh.draw();
 
     glPopMatrix();
@@ -99,7 +99,7 @@ void Viewer::initCurve(bool isMand){
 }
 
 void Viewer::constructCurve(){
-    curve = new Curve(control.size(), control, viewerFrame);
+    curve = new Curve(control.size(), control);
     unsigned int nbU = 100;
     curve->generateCatmull(nbU);
     isCurve = true;
@@ -121,8 +121,7 @@ void Viewer::registration(){
     mesh.icp(baseMesh);
     Quaternion r = mesh.getRotation();
     Vec t = mesh.getTranslation();
-    curve->rotate(r);
-    curve->translate(t);
+    updateCurve(r, t);
     update();
 }
 
@@ -130,8 +129,7 @@ void Viewer::registrationSingleStep(){
     mesh.icpSingleIteration(baseMesh);
     Quaternion r = mesh.getLastRotation();
     Vec t = mesh.getLastTranslation();
-    curve->rotate(r);
-    curve->translate(t);
+    updateCurve(r, t);
 }
 
 void Viewer::rotateX(int position){
@@ -178,11 +176,19 @@ void Viewer::setMeshAlpha(int alpha){
 }
 
 void Viewer::writeJSON(QJsonArray &cntrlArray){
+    Vec zero = baseMesh.getZeroedTranslation();
     for(unsigned int i=0; i<control.size(); i++){
         QJsonArray v;
-        v.append(curve->getControlPoint(i)->getX());
-        v.append(curve->getControlPoint(i)->getY());
-        v.append(curve->getControlPoint(i)->getZ());
+        Vec coordinate = baseMesh.getLocalCoordinate(curve->getControlPoint(i)->getPoint()) + zero;
+        v.append(coordinate.x);
+        v.append(coordinate.y);
+        v.append(coordinate.z);
         cntrlArray.append(v);
     }
+}
+
+void Viewer::updateCurve(Quaternion &r, Vec &t){
+    curve->rotate(r);
+    curve->translate(t);
+    curve->reintialiseCurve();
 }

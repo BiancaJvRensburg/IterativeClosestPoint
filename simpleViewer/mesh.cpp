@@ -19,6 +19,7 @@ void Mesh::init(const Frame *ref){
     lastRotation = Quaternion();
     totalTranslation = Vec(0.,0.,0.);
     lastTranslation = Vec();
+    zeroedTranslation = Vec();
 
     zero();
 
@@ -138,6 +139,7 @@ void Mesh::draw()
 
 void Mesh::zero(){
     for(unsigned int i=0; i<vertices.size(); i++) vertices[i] -= BBCentre;
+    zeroedTranslation = Vec(BBCentre);
     computeBB();
 }
 

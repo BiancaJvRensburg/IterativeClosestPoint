@@ -38,7 +38,9 @@ protected:
     virtual void init();
 
     void constructCurve();
+    void updateCurve(Quaternion &r, Vec &t);
     void updateCamera(const Vec3Df & center, float radius);
+
     ManipulatedFrame* viewerFrame;
     Mesh baseMesh;
     Mesh mesh;

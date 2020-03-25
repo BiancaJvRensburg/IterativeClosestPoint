@@ -20,6 +20,8 @@ public:
     const double& getY(){ return p.y; }
     const double& getZ(){ return p.z; }
     void scale(float& s);
+    void translate(Vec &t);
+    void move(Vec &t);
 
     void initialise();
     virtual void draw();

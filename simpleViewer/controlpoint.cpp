@@ -54,3 +54,13 @@ void ControlPoint::scale(float &s){
     p *= s;
     mf.setPosition(p);
 }
+
+void ControlPoint::translate(Vec &t){
+    p += t;
+    mf.setPosition(p);
+}
+
+void ControlPoint::move(Vec &t){
+    p = t;
+    mf.setPosition(p);
+}

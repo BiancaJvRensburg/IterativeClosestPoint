@@ -39,6 +39,8 @@ public:
     Quaternion& getLastRotation(){ return lastRotation; }
     Vec& getLastTranslation(){ return lastTranslation; }
     float& getLastScale(){ return lastScale; }
+    Vec getLocalCoordinate(Vec &p){ return frame.localCoordinatesOf(p); }
+    Vec& getZeroedTranslation(){ return zeroedTranslation; }
 
     void setReferenceFrame(const Frame *ref){frame.setReferenceFrame(ref);}
     void init(const Frame *ref);
@@ -56,6 +58,7 @@ public:
 
     // ICP
     Vec getDepthAxis(bool isLocal);
+    void printEulerAngles(const Quaternion &q);
 
     void icp(Mesh &base);
     void icpSingleIteration(Mesh &base);
@@ -105,7 +108,6 @@ protected:
     std::vector<Vec3Df> centralise(std::vector<Vec3Df>& v);
     float productSum(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b, int aI, int bI);
     Quaternion findRotation(std::vector<Vec3Df>& a, std::vector<Vec3Df>& b);
-    void printEulerAngles(const Quaternion &q);
     float findUniformScale(std::vector<Vec3Df>& v, std::vector<Vec3Df>& c);
     Vec3Df findTranslation(std::vector<Vec3Df> &worldVertices, std::vector<Vec3Df>& correspondences);
 
@@ -159,6 +161,7 @@ protected:
     Quaternion lastRotation;
     Vec lastTranslation;
     float lastScale;
+    Vec zeroedTranslation;
 
     Frame frame;        // can do rotations from the frame?
 };
